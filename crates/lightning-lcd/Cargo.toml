@@ -1,0 +1,17 @@
+[package]
+name = "lightning-lcd"
+description = "Protocole USB de l'écran LCD de la MSI RTX 5090 Lightning Z (0db0:7881)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+rusb = "0.9"
+libc = "0.2"
+num-bigint = "0.4"
+jpeg-encoder = { version = "0.6", features = ["simd"] }
+serde = { workspace = true }
+serde_json = "1"
+thiserror = { workspace = true }
+tracing = { workspace = true }

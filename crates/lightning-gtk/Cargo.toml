@@ -1,0 +1,18 @@
+[package]
+name = "lightning-gtk"
+description = "Application GNOME de réglage de l'écran LCD de la MSI RTX 5090 Lightning Z"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "lightning-settings"
+path = "src/main.rs"
+
+[dependencies]
+lightning-ipc = { workspace = true }
+zbus = { workspace = true }
+# Versions minimales visées : GTK 4.14 et libadwaita 1.5 (Ubuntu 24.04, Fedora 40+).
+gtk = { package = "gtk4", version = "0.9", features = ["v4_14"] }
+adw = { package = "libadwaita", version = "0.7", features = ["v1_5"] }

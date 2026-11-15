@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=Lightning
+GenericName=LCD Settings
+GenericName[fr]=Réglages de l'écran LCD
+Comment=Configure the LCD screen of the MSI RTX 5090 Lightning Z
+Comment[fr]=Régler l'écran LCD de la MSI RTX 5090 Lightning Z
+Exec=lightning-settings
+Icon=cloud.wizops.Lightning
+Terminal=false
+Categories=Settings;HardwareSettings;GTK;
+Keywords=LCD;MSI;RTX;GPU;dashboard;écran;tableau de bord;
+StartupNotify=true

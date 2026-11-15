@@ -1,0 +1,70 @@
+# Exemple de configuration : à copier dans ~/.config/lightning/config.toml
+# Toutes les clés sont facultatives ; les valeurs ci-dessous sont les défauts.
+
+[dashboard]
+# Images par seconde envoyées à l'écran (0.1 à 30).
+fps = 2.0
+# Qualité JPEG (1 à 100).
+quality = 85
+# Rotation logicielle de l'image : 0 ou 180.
+rotation = 0
+# Luminosité de l'écran appliquée au démarrage (0 à 100). Décommenter pour l'activer.
+# brightness = 80
+# Panneaux affichés.
+widgets = ["gpu", "cpu", "memory", "disks", "network"]
+# Points de montage du panneau disques.
+disks = ["/", "/home"]
+# Interface réseau suivie ; par défaut la somme des interfaces physiques.
+# interface = "eth0"
+# Nombre de points des mini-historiques.
+history = 120
+
+[output]
+# Sorties actives : "lcd" (l'écran réel), "window" (fenêtre d'aperçu), "http" (navigateur).
+outputs = ["lcd"]
+# Adresse du serveur d'aperçu (sortie "http"). 127.0.0.1 = cette machine uniquement.
+http_addr = "127.0.0.1:7881"
+# Bandeau de debug dans la fenêtre d'aperçu (touche O pour le basculer).
+overlay = true
+# Rotation simulée dans la fenêtre d'aperçu : 0, 90, 180 ou 270 (touche R).
+preview_rotation = 0
+# À l'arrêt : "keep" (dernière image), "blank" (écran noir « arrêté »),
+# "restore" (rend la main au firmware : animation MSI d'origine).
+on_exit = "keep"
+
+# Contenu affiché par le démon (`lightning daemon`), modifiable à chaud depuis
+# l'application de réglage ou `lightning ctl`.
+[daemon]
+# "dashboard", "image", "video", "color" ou "msi_animation".
+mode = "dashboard"
+# Image du mode "image" (chemin absolu) et son ajustement : "cover", "contain", "stretch".
+image_path = ""
+image_fit = "cover"
+# Vidéo du mode "video" (chemin absolu ou URL lisible par ffmpeg), lue en boucle ou non.
+video_path = ""
+video_loop = true
+# Couleur du mode "color" (RRGGBB).
+color = "101418"
+
+# Mode "slideshow" : diaporama de photos.
+[slideshow]
+# Dossiers parcourus récursivement (JPEG, PNG, WebP, BMP). Le cache Google Photos
+# (~/.cache/lightning/google-photos) s'y ajoute tout seul après un import.
+folders = []
+# Durée d'affichage de chaque photo, en secondes.
+interval_s = 15.0
+# "random" ou "chronological" (date de prise de vue EXIF, sinon date du fichier).
+order = "random"
+# "cover" (remplir en rognant) ou "contain" (photo entière sur fond flou).
+fit = "contain"
+# Fondu enchaîné entre deux photos, en millisecondes (0 = aucun).
+transition_ms = 600
+# Légende (date et album) et petite horloge.
+overlay = true
+clock = true
+
+# Import Google Photos (Picker API) : client OAuth de type « application de bureau »
+# créé dans votre Google Cloud Console (voir le README).
+[google]
+client_id = ""
+client_secret = ""

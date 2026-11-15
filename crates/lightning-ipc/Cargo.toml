@@ -1,0 +1,11 @@
+[package]
+name = "lightning-ipc"
+description = "Interface D-Bus du démon lightning (noms, types et proxy client)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+zbus = { workspace = true }

@@ -1,0 +1,34 @@
+# Service systemd utilisateur : démon de l'écran LCD de la carte graphique.
+# Il affiche le tableau de bord (ou une image, une vidéo…) et se pilote par D-Bus
+# (nom cloud.wizops.Lightning.Daemon) depuis l'application « Lightning » ou `lightning ctl`.
+#
+#   install -Dm755 target/release/lightning ~/.local/bin/lightning
+#   install -Dm644 packaging/lightning-dashboard.service ~/.config/systemd/user/lightning-dashboard.service
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now lightning-dashboard.service
+[Unit]
+Description=Écran LCD MSI RTX 5090 Lightning Z (tableau de bord, démon D-Bus)
+Documentation=https://github.com/wizops-cloud/lightning-lcd
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/lightning daemon
+Restart=on-failure
+RestartSec=10
+# Priorité basse : l'affichage ne doit jamais gêner un jeu.
+Nice=10
+# Durcissement compatible avec l'accès à /dev/bus/usb, /dev/hidraw* et NVML.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+# Cache d'authentification (une authentification par énumération USB).
+ReadWritePaths=%t
+# Réglages modifiés à chaud : ~/.config/lightning est créé et laissé inscriptible.
+ConfigurationDirectory=lightning
+# Cache des photos importées de Google Photos (~/.cache/lightning).
+CacheDirectory=lightning
+
+[Install]
+WantedBy=default.target

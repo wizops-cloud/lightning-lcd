@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variante symbolique (monochrome) : écran et éclair. Dessin original. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path fill="#222222" d="M3 2C1.9 2 1 2.9 1 4v6c0 1.100.9 2 2 2h3.200L8.900 9H7l2.400-4H7.800L9 2zm7.600 0L9.700 3.500h1.700L9 7.500h1.900L8.500 12H13c1.100 0 2-.9 2-2V4c0-1.100-.9-2-2-2zM5 13.500a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1z"/>
+</svg>

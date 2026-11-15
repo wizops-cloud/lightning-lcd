@@ -1,0 +1,5 @@
+# MSI RTX 5090 Lightning Z — écran LCD "V530-9.6 Lightning" (ArtInChip USB Display) :
+# accès pour l'utilisateur connecté. Doit être trié avant 73-seat-late.rules.
+SUBSYSTEM=="usb", ATTR{idVendor}=="0db0", ATTR{idProduct}=="7881", MODE="0660", TAG+="uaccess"
+# Interface HID de commande (protocole BY : conn, extendedDisplay, brightness, rotate)
+KERNEL=="hidraw*", ATTRS{idVendor}=="0db0", ATTRS{idProduct}=="7881", MODE="0660", TAG+="uaccess"

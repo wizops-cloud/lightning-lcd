@@ -1,0 +1,33 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/lightning-lcd",
+    "crates/lightning-dashboard",
+    "crates/lightning-ipc",
+    "crates/lightning",
+    "crates/lightning-gtk",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+repository = "https://github.com/wizops-cloud/lightning-lcd"
+
+[workspace.dependencies]
+lightning-lcd = { path = "crates/lightning-lcd" }
+lightning-dashboard = { path = "crates/lightning-dashboard" }
+lightning-ipc = { path = "crates/lightning-ipc" }
+zbus = "5"
+thiserror = "2"
+tracing = "0.1"
+serde = { version = "1", features = ["derive"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true
+
+# Le rendu et l'encodage JPEG sont inutilisables sans optimisation.
+[profile.dev.package."*"]
+opt-level = 2

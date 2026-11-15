@@ -1,0 +1,35 @@
+[package]
+name = "lightning"
+description = "Application Linux pour l'écran LCD de la MSI RTX 5090 Lightning Z"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+lightning-lcd = { workspace = true }
+lightning-dashboard = { workspace = true }
+lightning-ipc = { workspace = true }
+zbus = { workspace = true }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+ctrlc = { version = "3", features = ["termination"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp", "gif"] }
+serde = { workspace = true }
+serde_json = "1"
+toml = "0.8"
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+fontdue = "0.9"
+kamadak-exif = "0.6"
+base64 = "0.22"
+sha2 = "0.10"
+ureq = { version = "2", features = ["json"] }
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+softbuffer = { version = "0.4", optional = true, default-features = false, features = ["wayland", "x11"] }
+winit = { version = "0.30", optional = true, default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen", "x11"] }
+
+[features]
+default = ["window"]
+# Fenêtre d'aperçu sur le bureau (winit + softbuffer).
+window = ["dep:softbuffer", "dep:winit"]
