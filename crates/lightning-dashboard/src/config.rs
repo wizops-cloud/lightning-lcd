@@ -10,7 +10,8 @@ pub struct DashboardConfig {
     pub fps: f32,
     /// Qualité JPEG (1 à 100).
     pub quality: u8,
-    /// Rotation logicielle de l'image : 0 ou 180 degrés.
+    /// Rotation logicielle de l'image, sens horaire : 0, 90, 180 ou 270 degrés
+    /// (90 et 270 : disposition portrait).
     pub rotation: u16,
     /// Luminosité de l'écran (0 à 100) appliquée au démarrage, si renseignée.
     pub brightness: Option<u8>,

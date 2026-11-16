@@ -135,7 +135,8 @@ pub trait Lightning {
     fn set_brightness(&self, level: u8) -> zbus::Result<()>;
     /// Cadence du tableau de bord, en images par seconde.
     fn set_fps(&self, fps: f64) -> zbus::Result<()>;
-    /// Rotation logicielle de l'image : 0 ou 180.
+    /// Rotation logicielle de l'image, sens horaire : 0, 90, 180 ou 270
+    /// (90 et 270 : contenu composé en portrait).
     fn set_rotation(&self, degrees: u16) -> zbus::Result<()>;
     /// Panneaux du tableau de bord, dans l'ordre d'affichage.
     fn set_widgets(&self, widgets: &[&str]) -> zbus::Result<()>;

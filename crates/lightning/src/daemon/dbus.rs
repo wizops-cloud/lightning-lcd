@@ -620,7 +620,12 @@ pub(crate) mod tests {
             .unwrap_err()
             .to_string();
         assert!(err.contains("/nonexistent.png"), "{err}");
-        assert!(proxy.set_rotation(90).is_err());
+        assert!(proxy.set_rotation(45).is_err());
+        proxy.set_rotation(270).unwrap();
+        wait_for("Rotation=270 signalée", || {
+            proxy.rotation().unwrap() == 270
+        });
+        proxy.set_rotation(0).unwrap();
         assert!(proxy.set_on_exit("explode").is_err());
 
         // Diaporama : réglages et propriétés.

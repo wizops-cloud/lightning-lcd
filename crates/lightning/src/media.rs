@@ -62,29 +62,34 @@ pub fn load_image(path: &Path, fit: Fit, width: u32, height: u32) -> Result<Vec<
     Ok(fitted.into_raw())
 }
 
-/// Retourne une image RGBA de 180° (sur place).
-pub fn rotate_180(rgba: &mut [u8]) {
-    let (pixels, _) = rgba.as_chunks_mut::<4>();
-    pixels.reverse();
+/// Filtre ffmpeg : vidéo ajustée au canevas `w` × `h` puis tournée de
+/// `rotation` degrés dans le sens horaire (90/270 : canevas portrait).
+pub fn video_filter(fps: f32, rotation: u16, w: u32, h: u32) -> String {
+    let mut filter = format!(
+        "scale={w}:{h}:force_original_aspect_ratio=decrease,\
+         pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,fps={fps}"
+    );
+    filter.push_str(match rotation {
+        90 => ",transpose=clock",
+        180 => ",hflip,vflip",
+        270 => ",transpose=cclock",
+        _ => "",
+    });
+    filter.push_str(",format=yuvj420p");
+    filter
 }
 
-/// Lance ffmpeg pour convertir `file` en flux MJPEG à la taille de l'écran.
+/// Lance ffmpeg pour convertir `file` en flux MJPEG ; `width` × `height` est le
+/// canevas avant rotation (portrait à 90 et 270°).
 pub fn spawn_ffmpeg(
     file: &str,
     fps: f32,
     looped: bool,
-    rotate_180: bool,
+    rotation: u16,
     width: u32,
     height: u32,
 ) -> Result<Child> {
-    let (w, h) = (width, height);
-    let mut filter = format!(
-        "scale={w}:{h}:force_original_aspect_ratio=decrease,\
-         pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,fps={fps},format=yuvj420p"
-    );
-    if rotate_180 {
-        filter.push_str(",hflip,vflip");
-    }
+    let filter = video_filter(fps, rotation, width, height);
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-hide_banner", "-loglevel", "error", "-nostdin"]);
     if looped {
@@ -115,12 +120,18 @@ mod tests {
     }
 
     #[test]
-    fn solid_and_rotation() {
-        let mut img = solid([1, 2, 3], 2, 1);
+    fn solid_and_video_filters() {
+        let img = solid([1, 2, 3], 2, 1);
         assert_eq!(img, [1, 2, 3, 255, 1, 2, 3, 255]);
-        img[0] = 9;
-        rotate_180(&mut img);
-        assert_eq!(img, [1, 2, 3, 255, 9, 2, 3, 255]);
+        let plain = video_filter(30.0, 0, 1280, 800);
+        assert!(plain.starts_with("scale=1280:800:"), "{plain}");
+        assert!(!plain.contains("transpose") && !plain.contains("flip"));
+        assert!(video_filter(30.0, 180, 1280, 800).contains("hflip,vflip"));
+        let quarter = video_filter(30.0, 90, 800, 1280);
+        assert!(quarter.starts_with("scale=800:1280:"), "{quarter}");
+        assert!(quarter.contains("transpose=clock,"), "{quarter}");
+        assert!(video_filter(30.0, 270, 800, 1280).contains("transpose=cclock,"));
+        assert!(quarter.ends_with("format=yuvj420p"));
     }
 
     #[test]

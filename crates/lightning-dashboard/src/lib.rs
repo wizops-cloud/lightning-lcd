@@ -4,6 +4,7 @@
 pub mod config;
 pub mod metrics;
 pub mod render;
+pub mod rotate;
 
 pub use config::DashboardConfig;
 pub use metrics::{Collector, History, Snapshot};

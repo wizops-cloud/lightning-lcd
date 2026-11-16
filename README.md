@@ -266,6 +266,16 @@ started outside a graphical session), it stays in `~/.config/lightning/google.js
 old file is moved into the keyring as soon as it answers. The token never appears in the logs.
 "Clear cache" deletes the imported photos.
 
+## Orientation
+
+`lightning ctl rotation 0|90|180|270` (or Settings → Orientation) rotates the image clockwise
+before sending it. At 90 and 270°, everything is laid out in portrait (800 × 1280) and then
+rotated: dashboard in a column (graphics card and processor stacked, other panels two by two),
+image, video, slideshow, clock and now playing. If the image shows upside down, pick the other
+quarter turn.
+
+<img src="docs/en/dashboard-portrait.png" width="360" alt="Dashboard in portrait (90°), seen with the screen rotated">
+
 ## Clock and now playing
 
 - **Clock** (`clock`): the time in very large digits, readable from afar, with the full date;
@@ -342,7 +352,7 @@ banner and in `/status.json`, and the connection is retried continuously. With `
 
 Optional, in `~/.config/lightning/config.toml`; see
 [packaging/config.example.toml](packaging/config.example.toml) (frame rate, JPEG quality,
-rotation 0/180, brightness, shown panels, disks, network interface, outputs, HTTP address,
+rotation 0/90/180/270, brightness, shown panels, disks, network interface, outputs, HTTP address,
 behavior on exit).
 
 ## Layout
@@ -380,7 +390,7 @@ Please report the result with the "Retour sur un matériel non testé" issue tem
 ## Known limitations
 
 - Uploading media to the screen's flash memory (`transport`) is deliberately not implemented.
-- Rotation: 0 and 180° only (in software); the firmware `rotate` command is not used.
+- Rotation is done in software only; the firmware `rotate` command is not used.
 - Going back to the original MSI animation requires power-cycling the screen.
 
 ## Contributing

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Régénère les captures de la documentation, en français et en anglais :
-# docs/screenshots/*.png, docs/screenshots/en/*.png, docs/{dashboard,clock,now-playing}.png
-# et docs/en/{dashboard,clock,now-playing}.png.
+# docs/screenshots/*.png, docs/screenshots/en/*.png, docs/{dashboard,dashboard-portrait,clock,
+# now-playing}.png et docs/en/{dashboard,dashboard-portrait,clock,now-playing}.png.
 #
 #   scripts/screenshots.sh [--no-build] [--out DOSSIER]
 #
@@ -170,6 +170,11 @@ for lang in fr en; do
 # --- Tableau de bord ----------------------------------------------------------------------
 in_lang $lang env XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
     "$LIGHTNING" --config "$WORK/empty.toml" --no-lcd --demo dashboard --png "$DOCS/dashboard.png"
+# Portrait (rotation 90°), remis droit pour la documentation.
+printf '[dashboard]\nrotation = 90\n' >"$WORK/portrait.toml"
+in_lang $lang env XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
+    "$LIGHTNING" --config "$WORK/portrait.toml" --no-lcd --demo dashboard --png "$WORK/portrait.png"
+magick "$WORK/portrait.png" -rotate -90 "$DOCS/dashboard-portrait.png"
 
 # --- Horloge et lecture en cours (images de l'écran, démon de démonstration privé) -------
 in_lang $lang env XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \

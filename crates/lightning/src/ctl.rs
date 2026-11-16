@@ -36,7 +36,7 @@ pub enum CtlCmd {
     Brightness { level: u8 },
     /// Cadence du tableau de bord (images par seconde)
     Fps { fps: f64 },
-    /// Rotation logicielle : 0 ou 180
+    /// Rotation logicielle, sens horaire : 0, 90, 180 ou 270
     Rotation { degrees: u16 },
     /// Panneaux du tableau de bord, dans l'ordre : gpu,cpu,memory,disks,network
     Widgets {
@@ -524,7 +524,7 @@ mod tests {
         assert!(text.contains("frame.jpg"));
         assert_eq!(&std::fs::read(&frame).unwrap()[..2], &[0xFF, 0xD8]);
 
-        let err = ctl(CtlCmd::Rotation { degrees: 90 })
+        let err = ctl(CtlCmd::Rotation { degrees: 45 })
             .unwrap_err()
             .to_string();
         assert!(err.contains("rotation"), "{err}");

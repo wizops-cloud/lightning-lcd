@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use lightning_dashboard::{ClockConfig, Collector, Renderer};
+use lightning_dashboard::{ClockConfig, Collector, Renderer, rotate};
 use lightning_i18n::{tr, trf};
 use lightning_ipc::{Fit, Mode, OnExit, WIDGETS};
 use lightning_lcd::HidControl;
@@ -294,8 +294,8 @@ fn brightness_worker(jobs: Receiver<BrightnessJob>, events: Sender<Event>) {
     }
 }
 
-fn message_frame(title: &str, subtitle: &str) -> Vec<u8> {
-    let (w, h) = (WIDTH as usize, HEIGHT as usize);
+fn message_frame(title: &str, subtitle: &str, width: u32, height: u32) -> Vec<u8> {
+    let (w, h) = (width as usize, height as usize);
     let mut buf = vec![0x0009_0B10u32; w * h];
     let mut painter = text::TextPainter::new();
     let tw = painter.measure(title, 44.0);
@@ -515,11 +515,14 @@ impl Engine {
         }
     }
 
-    fn rotated(&self, mut rgba: Vec<u8>) -> Vec<u8> {
-        if self.cfg.dashboard.rotation == 180 {
-            media::rotate_180(&mut rgba);
-        }
-        rgba
+    /// Image composée sur le canevas de [`Self::canvas`], tournée pour l'écran.
+    fn rotated(&self, rgba: Vec<u8>) -> Vec<u8> {
+        rotate::to_screen(rgba, self.cfg.dashboard.rotation)
+    }
+
+    /// Canevas des contenus avant rotation (portrait à 90 et 270°).
+    fn canvas(&self) -> (u32, u32) {
+        rotate::canvas(self.cfg.dashboard.rotation)
     }
 
     fn start_video(&mut self) -> Reply {
@@ -533,13 +536,14 @@ impl Engine {
                 &[("path", &d.video_path)],
             ));
         }
+        let (cw, ch) = rotate::canvas(self.cfg.dashboard.rotation);
         let mut child = media::spawn_ffmpeg(
             &d.video_path,
             30.0,
             d.video_loop,
-            self.cfg.dashboard.rotation == 180,
-            WIDTH,
-            HEIGHT,
+            self.cfg.dashboard.rotation,
+            cw,
+            ch,
         )
         .map_err(|e| format!("{e:#}"))?;
         let stdout = child
@@ -576,7 +580,8 @@ impl Engine {
                 if d.image_path.is_empty() {
                     return Err(tr("aucune image choisie").into());
                 }
-                let rgba = media::load_image(Path::new(&d.image_path), d.image_fit, WIDTH, HEIGHT)
+                let (cw, ch) = self.canvas();
+                let rgba = media::load_image(Path::new(&d.image_path), d.image_fit, cw, ch)
                     .map_err(|e| format!("{e:#}"))?;
                 Some(self.rotated(rgba))
             }
@@ -584,10 +589,15 @@ impl Engine {
                 let rgb = media::parse_color(&self.cfg.daemon.color).map_err(|e| e.to_string())?;
                 Some(media::solid(rgb, WIDTH, HEIGHT))
             }
-            Mode::MsiAnimation => Some(message_frame(
-                tr("animation MSI"),
-                tr("l'écran est rendu à son firmware"),
-            )),
+            Mode::MsiAnimation => {
+                let (cw, ch) = self.canvas();
+                Some(self.rotated(message_frame(
+                    tr("animation MSI"),
+                    tr("l'écran est rendu à son firmware"),
+                    cw,
+                    ch,
+                )))
+            }
         };
         self.video = None;
         self.slideshow = None;
@@ -602,7 +612,8 @@ impl Engine {
             self.start_video()?;
         }
         if mode == Mode::Slideshow {
-            self.slideshow = Some(Slideshow::new(self.cfg.slideshow.clone(), WIDTH, HEIGHT));
+            let (cw, ch) = self.canvas();
+            self.slideshow = Some(Slideshow::new(self.cfg.slideshow.clone(), cw, ch));
         }
         if let Some(lcd) = &self.lcd {
             if mode == Mode::MsiAnimation {
@@ -722,8 +733,8 @@ impl Engine {
                 self.cfg.dashboard.fps = fps as f32;
             }
             Request::SetRotation(degrees) => {
-                if !matches!(degrees, 0 | 180) {
-                    return Err(tr("rotation : seules 0 et 180 sont prises en charge").into());
+                if !rotate::is_valid(degrees) {
+                    return Err(tr("rotation : 0, 90, 180 ou 270 attendu").into());
                 }
                 if self.cfg.dashboard.rotation != degrees {
                     self.cfg.dashboard.rotation = degrees;
@@ -929,11 +940,8 @@ impl Engine {
                     return;
                 };
                 let now = Instant::now();
-                if let Some(mut rgba) = show.poll(now) {
-                    if self.cfg.dashboard.rotation == 180 {
-                        media::rotate_180(&mut rgba);
-                    }
-                    self.still = Some(rgba);
+                if let Some(rgba) = show.poll(now) {
+                    self.still = Some(rotate::to_screen(rgba, self.cfg.dashboard.rotation));
                     self.last_slide = now - Duration::from_secs(60);
                 }
                 // Nouvelle image tout de suite ; sinon réémission toutes les 2 s
@@ -1211,7 +1219,7 @@ pub(crate) mod tests {
                 .contains("cadence")
         );
         assert!(h.call(Request::SetFps(f64::NAN)).is_err());
-        assert!(h.call(Request::SetRotation(90)).is_err());
+        assert!(h.call(Request::SetRotation(45)).is_err());
         assert!(h.call(Request::SetBrightness(101)).is_err());
         assert!(
             h.call(Request::SetWidgets(vec!["meteo".into()]))
@@ -1255,6 +1263,26 @@ pub(crate) mod tests {
         wait_for("vert à gauche", || {
             near(frame_pixel(h, 100, 400), [0, 255, 0])
         });
+        // Quart de tour : l'image est composée en portrait (moitié gauche bleue),
+        // puis tournée dans le sens horaire : le bleu passe en haut.
+        h.call(Request::SetRotation(90)).unwrap();
+        assert_eq!(h.state().rotation, 90);
+        wait_for("bleu en haut", || {
+            near(frame_pixel(h, 640, 100), [0, 0, 255])
+                && near(frame_pixel(h, 640, 700), [0, 255, 0])
+        });
+        h.call(Request::SetRotation(270)).unwrap();
+        wait_for("bleu en bas", || {
+            near(frame_pixel(h, 640, 700), [0, 0, 255])
+                && near(frame_pixel(h, 640, 100), [0, 255, 0])
+        });
+        assert_eq!(
+            config::load(Some(&run.config_path))
+                .unwrap()
+                .dashboard
+                .rotation,
+            270
+        );
         h.call(Request::SetRotation(0)).unwrap();
 
         // Image introuvable : erreur, on reste sur l'image précédente.

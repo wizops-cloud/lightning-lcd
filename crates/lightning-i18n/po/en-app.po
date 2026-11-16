@@ -584,9 +584,6 @@ msgstr "Turn them on, then drag them or use the arrows; the order applies within
 msgid "Orientation"
 msgstr "Orientation"
 
-msgid "Retourne l'image si l'écran est monté tête en bas"
-msgstr "Flips the image if the screen is mounted upside down"
-
 msgid "Normale"
 msgstr "Normal"
 
@@ -664,3 +661,12 @@ msgstr "Start Service"
 
 msgid "Couleur #{hex}"
 msgstr "Color #{hex}"
+
+msgid "Quart de tour à droite (portrait)"
+msgstr "Quarter turn right (portrait)"
+
+msgid "Quart de tour à gauche (portrait)"
+msgstr "Quarter turn left (portrait)"
+
+msgid "Selon la position de l'écran ; les quarts de tour passent en portrait"
+msgstr "Depends on how the screen is mounted; quarter turns switch to portrait"

@@ -5,9 +5,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: en\n"
 
-msgid "(Spotify, Rhythmbox, Lollypop, navigateur…)"
-msgstr "(Spotify, Rhythmbox, Lollypop, web browser…)"
-
 msgid "--preview-rotation : 0, 90, 180 ou 270"
 msgstr "--preview-rotation: 0, 90, 180 or 270"
 
@@ -269,9 +266,6 @@ msgstr "the screen is handed back to its firmware"
 msgid "lancement de ffmpeg (est-il installé ?)"
 msgstr "starting ffmpeg (is it installed?)"
 
-msgid "Lancez un morceau dans un lecteur compatible MPRIS"
-msgstr "Play a track in an MPRIS-compatible player"
-
 msgid "le diaporama n'est pas affiché"
 msgstr "the slideshow is not shown"
 
@@ -406,9 +400,6 @@ msgstr "renewing the token"
 
 msgid "rotation"
 msgstr "rotation"
-
-msgid "rotation : seules 0 et 180 sont prises en charge"
-msgstr "rotation: only 0 and 180 are supported"
 
 msgid "réponse du serveur de jetons illisible : {error}"
 msgstr "unreadable token server response: {error}"
@@ -559,3 +550,12 @@ msgstr "USB ID"
 
 msgid "{id} (non testé)"
 msgstr "{id} (untested)"
+
+msgid "Lancez un morceau dans un lecteur compatible MPRIS (Spotify, Rhythmbox, Lollypop, navigateur…)"
+msgstr "Play a track in an MPRIS-compatible player (Spotify, Rhythmbox, Lollypop, browser…)"
+
+msgid "rotation : 0, 90, 180 ou 270"
+msgstr "rotation: 0, 90, 180 or 270"
+
+msgid "rotation : 0, 90, 180 ou 270 attendu"
+msgstr "rotation: 0, 90, 180 or 270 expected"

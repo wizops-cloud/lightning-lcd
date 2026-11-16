@@ -19,6 +19,7 @@ use lightning_i18n::{Lang, lang, tr, trf};
 
 use crate::config::DashboardConfig;
 use crate::metrics::{History, Snapshot};
+use crate::rotate;
 
 /// Largeur de l'image produite.
 pub const WIDTH: u32 = 1280;
@@ -92,7 +93,12 @@ pub struct Renderer {
     regular: Font,
     bold: Font,
     glyphs: HashMap<(char, u32, Weight), Glyph>,
+    /// Canevas courant (paysage, ou portrait pour 90 et 270°).
     pixmap: Pixmap,
+    /// Canevas de l'autre orientation, gardé pour la prochaine image.
+    spare: Option<Pixmap>,
+    /// Image tournée d'un quart de tour.
+    turned: Vec<u8>,
 }
 
 impl Default for Renderer {
@@ -111,14 +117,25 @@ impl Renderer {
             bold: load(FONT_BOLD),
             glyphs: HashMap::new(),
             pixmap: Pixmap::new(WIDTH, HEIGHT).expect("dimensions non nulles"),
+            spare: None,
+            turned: Vec::new(),
         }
     }
 
     /// Dessine le tableau de bord et renvoie l'image en RGBA (4 octets par pixel,
     /// opaque), de taille [`WIDTH`] × [`HEIGHT`].
+    ///
+    /// À 90 et 270°, la disposition est en portrait (800 × 1280) puis tournée.
     pub fn render(&mut self, s: &Snapshot, h: &History, cfg: &DashboardConfig) -> &[u8] {
-        self.pixmap.fill(color(BG, 255));
-        self.header(s);
+        self.begin(cfg.rotation);
+        let portrait = rotate::is_portrait(cfg.rotation);
+        let (cw, ch) = (self.w(), self.h());
+        let top_y = if portrait {
+            self.header_portrait(s)
+        } else {
+            self.header(s);
+            76.0
+        };
 
         // L'ordre de la configuration fixe l'ordre des panneaux dans chaque rangée.
         let in_row = |row: &[&'static str]| -> Vec<&'static str> {
@@ -134,37 +151,11 @@ impl Renderer {
         };
         let top = in_row(&["gpu", "cpu"]);
         let bottom = in_row(&["memory", "disks", "network"]);
-        let (margin, gap, top_y) = (16.0, 16.0, 76.0);
-        let avail = HEIGHT as f32 - top_y - margin;
-        let (top_h, bottom_h) = match (top.is_empty(), bottom.is_empty()) {
-            (false, false) => (avail - gap - 236.0, 236.0),
-            (false, true) => (avail, 0.0),
-            (true, _) => (0.0, avail),
+        let panels = if portrait {
+            portrait_layout(&top, &bottom, cw as f32, ch as f32, top_y)
+        } else {
+            landscape_layout(&top, &bottom, cw as f32, ch as f32, top_y)
         };
-        let row = |names: &[&str], y: f32, height: f32| -> Vec<(String, Area)> {
-            let n = names.len() as f32;
-            let w = (WIDTH as f32 - 2.0 * margin - gap * (n - 1.0)) / n;
-            names
-                .iter()
-                .enumerate()
-                .map(|(i, name)| {
-                    let x = margin + i as f32 * (w + gap);
-                    ((*name).to_owned(), Area { x, y, w, h: height })
-                })
-                .collect()
-        };
-        let mut panels = Vec::new();
-        if !top.is_empty() {
-            panels.extend(row(&top, top_y, top_h));
-        }
-        if !bottom.is_empty() {
-            let y = if top.is_empty() {
-                top_y
-            } else {
-                top_y + top_h + gap
-            };
-            panels.extend(row(&bottom, y, bottom_h));
-        }
         for (name, area) in panels {
             self.panel(area);
             let inner = area.inset(20.0);
@@ -176,14 +167,181 @@ impl Renderer {
                 _ => self.network_panel(inner, s, h),
             }
         }
-        if cfg.rotation == 180 {
-            self.pixmap.pixels_mut().reverse();
+        self.finish(cfg.rotation)
+    }
+
+    /// Largeur du canevas courant.
+    fn w(&self) -> u32 {
+        self.pixmap.width()
+    }
+
+    /// Hauteur du canevas courant.
+    fn h(&self) -> u32 {
+        self.pixmap.height()
+    }
+
+    /// Prépare un canevas vide dans l'orientation demandée.
+    fn begin(&mut self, rotation: u16) {
+        let (w, h) = rotate::canvas(rotation);
+        if (self.pixmap.width(), self.pixmap.height()) != (w, h) {
+            let other = self
+                .spare
+                .take()
+                .unwrap_or_else(|| Pixmap::new(w, h).expect("dimensions non nulles"));
+            self.spare = Some(std::mem::replace(&mut self.pixmap, other));
         }
-        self.pixmap.data()
+        self.pixmap.fill(color(BG, 255));
+    }
+
+    /// Applique la rotation et renvoie l'image de l'écran (1280 × 800, RGBA).
+    fn finish(&mut self, rotation: u16) -> &[u8] {
+        match rotation {
+            180 => {
+                self.pixmap.pixels_mut().reverse();
+                self.pixmap.data()
+            }
+            90 | 270 => {
+                self.turned =
+                    rotate::quarter_turn(self.pixmap.data(), self.w(), self.h(), rotation == 90);
+                &self.turned
+            }
+            _ => self.pixmap.data(),
+        }
     }
 
     // ---------------------------------------------------------------- panneaux
 
+    /// En-tête sur deux lignes (portrait) ; renvoie le haut de la zone des panneaux.
+    fn header_portrait(&mut self, s: &Snapshot) -> f32 {
+        let host = if s.hostname.is_empty() {
+            "PC"
+        } else {
+            &s.hostname
+        };
+        let right = self.w() as f32 - 24.0;
+        let clock = s.time.format("%H:%M:%S").to_string();
+        let clock_w = self.measure(44.0, Weight::Bold, &clock);
+        self.text(right - clock_w, 56.0, 44.0, Weight::Bold, TEXT, &clock);
+        let host_line = screens::wrap_text(host, right - clock_w - 48.0, 1, |t| {
+            self.measure(34.0, Weight::Bold, t)
+        });
+        if let Some(line) = host_line.first() {
+            self.text(24.0, 52.0, 34.0, Weight::Bold, TEXT, line);
+        }
+        let up = trf(
+            "allumé depuis {uptime}",
+            &[("uptime", &fmt_uptime(s.uptime.as_secs()))],
+        );
+        self.text(24.0, 86.0, 22.0, Weight::Regular, MUTED, &up);
+        let date = s.time.format(date_format(lang())).to_string();
+        let date_w = self.measure(22.0, Weight::Regular, &date);
+        self.text(right - date_w, 86.0, 22.0, Weight::Regular, MUTED, &date);
+        104.0
+    }
+}
+
+/// Paysage : rangée du haut (carte graphique, processeur), rangée du bas.
+fn landscape_layout(
+    top: &[&str],
+    bottom: &[&str],
+    width: f32,
+    height: f32,
+    top_y: f32,
+) -> Vec<(String, Area)> {
+    {
+        let (margin, gap) = (16.0, 16.0);
+        let avail = height - top_y - margin;
+        let (top_h, bottom_h) = match (top.is_empty(), bottom.is_empty()) {
+            (false, false) => (avail - gap - 236.0, 236.0),
+            (false, true) => (avail, 0.0),
+            (true, _) => (0.0, avail),
+        };
+        let row = |names: &[&str], y: f32, height: f32| -> Vec<(String, Area)> {
+            let n = names.len() as f32;
+            let w = (width - 2.0 * margin - gap * (n - 1.0)) / n;
+            names
+                .iter()
+                .enumerate()
+                .map(|(i, name)| {
+                    let x = margin + i as f32 * (w + gap);
+                    ((*name).to_owned(), Area { x, y, w, h: height })
+                })
+                .collect()
+        };
+        let mut panels = Vec::new();
+        if !top.is_empty() {
+            panels.extend(row(top, top_y, top_h));
+        }
+        if !bottom.is_empty() {
+            let y = if top.is_empty() {
+                top_y
+            } else {
+                top_y + top_h + gap
+            };
+            panels.extend(row(bottom, y, bottom_h));
+        }
+        panels
+    }
+}
+
+/// Portrait : carte graphique et processeur en pleine largeur, l'un sous
+/// l'autre, puis les autres panneaux deux par deux (le dernier seul s'étend).
+fn portrait_layout(
+    top: &[&str],
+    bottom: &[&str],
+    width: f32,
+    height: f32,
+    top_y: f32,
+) -> Vec<(String, Area)> {
+    let (margin, gap) = (16.0, 16.0);
+    let full = width - 2.0 * margin;
+    let rows_bottom = bottom.len().div_ceil(2);
+    let rows = top.len() + rows_bottom;
+    if rows == 0 {
+        return Vec::new();
+    }
+    let avail = height - top_y - margin - gap * (rows as f32 - 1.0);
+    let (top_h, bottom_h) = match (top.is_empty(), rows_bottom) {
+        (true, n) => (0.0, avail / n as f32),
+        (false, 0) => (avail / top.len() as f32, 0.0),
+        (false, n) => {
+            let bottom_h = 190.0_f32.min(avail / rows as f32);
+            ((avail - bottom_h * n as f32) / top.len() as f32, bottom_h)
+        }
+    };
+    let mut panels = Vec::new();
+    let mut y = top_y;
+    for name in top {
+        panels.push((
+            (*name).to_owned(),
+            Area {
+                x: margin,
+                y,
+                w: full,
+                h: top_h,
+            },
+        ));
+        y += top_h + gap;
+    }
+    for pair in bottom.chunks(2) {
+        let w = (full - gap * (pair.len() as f32 - 1.0)) / pair.len() as f32;
+        for (i, name) in pair.iter().enumerate() {
+            panels.push((
+                (*name).to_owned(),
+                Area {
+                    x: margin + i as f32 * (w + gap),
+                    y,
+                    w,
+                    h: bottom_h,
+                },
+            ));
+        }
+        y += bottom_h + gap;
+    }
+    panels
+}
+
+impl Renderer {
     fn header(&mut self, s: &Snapshot) {
         let host = if s.hostname.is_empty() {
             "PC"
@@ -207,7 +365,7 @@ impl Renderer {
 
         let clock = s.time.format("%H:%M:%S").to_string();
         let clock_w = self.measure(44.0, Weight::Bold, &clock);
-        let right = WIDTH as f32 - 24.0;
+        let right = self.w() as f32 - 24.0;
         self.text(right - clock_w, 56.0, 44.0, Weight::Bold, TEXT, &clock);
         let date = s.time.format(date_format(lang())).to_string();
         let date_w = self.measure(22.0, Weight::Regular, &date);
@@ -414,9 +572,17 @@ impl Renderer {
             TEXT,
             &format!("{:.0} %", frac * 100.0),
         );
-        let used = trf("{size} utilisés", &[("size", &fmt_bytes(m.used))]);
-        let w = self.measure(22.0, Weight::Regular, &used);
-        self.text(a.right() - w, y + 36.0, 22.0, Weight::Regular, MUTED, &used);
+        // Panneau étroit (portrait) : forme courte, ou rien plutôt qu'un chevauchement.
+        let pct_w = self.measure(50.0, Weight::Bold, &format!("{:.0} %", frac * 100.0));
+        let long = trf("{size} utilisés", &[("size", &fmt_bytes(m.used))]);
+        let short = fmt_bytes(m.used);
+        for used in [long, short] {
+            let w = self.measure(22.0, Weight::Regular, &used);
+            if pct_w + 16.0 + w <= a.w {
+                self.text(a.right() - w, y + 36.0, 22.0, Weight::Regular, MUTED, &used);
+                break;
+            }
+        }
         self.bar(
             Area {
                 x: a.x,
@@ -465,6 +631,13 @@ impl Renderer {
                 tr("aucun point de montage"),
             );
         }
+        // Pas resserré quand la place manque (portrait), dans la limite de la lisibilité.
+        let room = a.bottom() + 4.0 - y - 56.0;
+        let step = if s.disks.len() > 1 {
+            (room / (s.disks.len() - 1) as f32).clamp(46.0, 64.0)
+        } else {
+            64.0
+        };
         for d in &s.disks {
             if y + 56.0 > a.bottom() + 4.0 {
                 break;
@@ -484,7 +657,7 @@ impl Renderer {
                 &d.mount,
                 &label,
             );
-            y += 64.0;
+            y += step;
         }
     }
 
@@ -661,7 +834,8 @@ impl Renderer {
             return;
         }
         self.rounded(a, 8.0, BG, 255);
-        if !label.is_empty() {
+        // Légende seulement si la courbe a la place de passer dessous.
+        if !label.is_empty() && a.h >= 56.0 {
             self.text(a.x + 10.0, a.y + 22.0, 16.0, Weight::Regular, MUTED, label);
         }
         if values.len() < 2 {
@@ -787,19 +961,20 @@ impl Renderer {
             let top = y.round() as i32 - gh as i32 - g.ymin;
             // Copie nécessaire : le cache et l'image appartiennent au même objet.
             let coverage = g.coverage.clone();
+            let (cw, ch) = (self.pixmap.width(), self.pixmap.height());
             let pixels = self.pixmap.pixels_mut();
             for row in 0..gh {
                 let py = top + row as i32;
-                if py < 0 || py >= HEIGHT as i32 {
+                if py < 0 || py >= ch as i32 {
                     continue;
                 }
                 for col in 0..gw {
                     let px = left + col as i32;
                     let cov = coverage[row * gw + col] as u32;
-                    if cov == 0 || px < 0 || px >= WIDTH as i32 {
+                    if cov == 0 || px < 0 || px >= cw as i32 {
                         continue;
                     }
-                    let idx = py as usize * WIDTH as usize + px as usize;
+                    let idx = py as usize * cw as usize + px as usize;
                     let dst = pixels[idx];
                     let mix =
                         |s: u8, d: u8| ((s as u32 * cov + d as u32 * (255 - cov)) / 255) as u8;
@@ -1037,6 +1212,91 @@ mod tests {
     }
 
     #[test]
+    fn quarter_turns_use_a_portrait_layout() {
+        let (snapshot, history) = sample();
+        let mut renderer = Renderer::new();
+        let render = |renderer: &mut Renderer, rotation: u16, widgets: &[&str]| {
+            let cfg = DashboardConfig {
+                rotation,
+                widgets: widgets.iter().map(|w| (*w).to_owned()).collect(),
+                ..Default::default()
+            };
+            renderer.render(&snapshot, &history, &cfg).to_vec()
+        };
+        let all = ["gpu", "cpu", "memory", "disks", "network"];
+        let r90 = render(&mut renderer, 90, &all);
+        let r270 = render(&mut renderer, 270, &all);
+        let r0 = render(&mut renderer, 0, &all);
+        for data in [&r90, &r270] {
+            assert_eq!(data.len(), (WIDTH * HEIGHT * 4) as usize);
+            assert!(data.as_chunks::<4>().0.iter().all(|p| p[3] == 255));
+        }
+        assert_ne!(r90, r0);
+        // 270° = 90° puis un demi-tour.
+        for (x, y) in [(0, 0), (100, 50), (640, 400), (1279, 799)] {
+            assert_eq!(
+                pixel(&r270, x, y),
+                pixel(&r90, WIDTH - 1 - x, HEIGHT - 1 - y),
+                "({x}, {y})"
+            );
+        }
+        // Remis droit : 800 × 1280, carte graphique en pleine largeur sous l'en-tête,
+        // panneaux du bas deux par deux.
+        let upright = rotate::quarter_turn(&r90, WIDTH, HEIGHT, false);
+        let at = |x: u32, y: u32| {
+            let i = (y * HEIGHT + x) as usize * 4;
+            [upright[i], upright[i + 1], upright[i + 2]]
+        };
+        assert_eq!(at(2, 2), [BG.0, BG.1, BG.2]);
+        assert_eq!(at(400, 112), [PANEL.0, PANEL.1, PANEL.2], "panneau GPU");
+        assert_eq!(at(780, 112), [PANEL.0, PANEL.1, PANEL.2], "pleine largeur");
+        assert_eq!(at(400, 1270), [BG.0, BG.1, BG.2], "marge basse");
+        // Sous-ensembles : rien ne panique, l'image reste pleine.
+        for widgets in [
+            &["network"][..],
+            &["gpu"],
+            &["memory", "disks", "network"],
+            &[],
+        ] {
+            assert_eq!(
+                render(&mut renderer, 270, widgets).len(),
+                (WIDTH * HEIGHT * 4) as usize
+            );
+        }
+        // Le canevas paysage est retrouvé ensuite.
+        assert_eq!(render(&mut renderer, 0, &all), r0);
+    }
+
+    #[test]
+    fn portrait_layout_fills_the_canvas() {
+        let panels = portrait_layout(
+            &["gpu", "cpu"],
+            &["memory", "disks", "network"],
+            800.0,
+            1280.0,
+            104.0,
+        );
+        assert_eq!(panels.len(), 5);
+        let get = |n: &str| panels.iter().find(|(name, _)| name == n).unwrap().1;
+        let (gpu, cpu, mem, disks, net) = (
+            get("gpu"),
+            get("cpu"),
+            get("memory"),
+            get("disks"),
+            get("network"),
+        );
+        assert_eq!((gpu.x, gpu.w), (16.0, 768.0));
+        assert!(cpu.y > gpu.bottom() && mem.y > cpu.bottom());
+        assert_eq!(mem.y, disks.y, "mémoire et disques côte à côte");
+        assert_eq!(net.w, 768.0, "le dernier seul s'étend");
+        assert!((net.bottom() - (1280.0 - 16.0)).abs() < 0.5, "jusqu'en bas");
+        assert!(gpu.h >= 340.0, "place pour les jauges ({})", gpu.h);
+        assert!(portrait_layout(&[], &[], 800.0, 1280.0, 104.0).is_empty());
+        let only = portrait_layout(&[], &["network"], 800.0, 1280.0, 104.0);
+        assert!((only[0].1.h - (1280.0 - 104.0 - 16.0)).abs() < 0.5);
+    }
+
+    #[test]
     fn survives_missing_gpu_empty_history_and_widget_subsets() {
         let (mut snapshot, _) = sample();
         snapshot.gpu = None;
@@ -1116,6 +1376,22 @@ mod tests {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target");
         if std::fs::create_dir_all(&dir).is_ok() {
             let _ = std::fs::write(dir.join("dashboard-test.ppm"), ppm);
+            // Portrait, remis droit.
+            let cfg = DashboardConfig {
+                rotation: 90,
+                ..Default::default()
+            };
+            let turned = renderer.render(&snapshot, &history, &cfg).to_vec();
+            let upright = rotate::quarter_turn(&turned, WIDTH, HEIGHT, false);
+            let mut ppm = format!("P6\n{HEIGHT} {WIDTH}\n255\n").into_bytes();
+            ppm.extend(
+                upright
+                    .as_chunks::<4>()
+                    .0
+                    .iter()
+                    .flat_map(|p| [p[0], p[1], p[2]]),
+            );
+            let _ = std::fs::write(dir.join("dashboard-portrait-test.ppm"), ppm);
         }
     }
 }

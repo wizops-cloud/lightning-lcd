@@ -474,7 +474,7 @@ fn pump(out: &mut Outputs, reader: impl Read, fps: f32, stop: &AtomicBool) -> Re
 }
 
 fn video(mut out: Outputs, file: &str, fps: f32, looped: bool, stop: &AtomicBool) -> Result<()> {
-    let mut child = media::spawn_ffmpeg(file, fps, looped, false, WIDTH, HEIGHT)?;
+    let mut child = media::spawn_ffmpeg(file, fps, looped, 0, WIDTH, HEIGHT)?;
     let stdout = child
         .stdout
         .take()

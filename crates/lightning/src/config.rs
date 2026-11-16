@@ -129,8 +129,8 @@ pub fn load(explicit: Option<&Path>) -> Result<Config> {
 pub fn validate(config: &Config) -> Result<()> {
     let d = &config.dashboard;
     anyhow::ensure!(
-        matches!(d.rotation, 0 | 180),
-        lightning_i18n::tr("rotation : seules 0 et 180 sont prises en charge")
+        lightning_dashboard::rotate::is_valid(d.rotation),
+        lightning_i18n::tr("rotation : 0, 90, 180 ou 270")
     );
     anyhow::ensure!(
         d.brightness.is_none_or(|b| b <= 100),
@@ -212,7 +212,14 @@ mod tests {
         assert_eq!(cfg.dashboard.fps, 1.0);
         assert_eq!(cfg.dashboard.brightness, Some(60));
         assert!(!cfg.dashboard.has_widget("gpu"));
-        assert!(parse("[dashboard]\nrotation = 90\n").is_err());
+        assert!(parse("[dashboard]\nrotation = 45\n").is_err());
+        assert_eq!(
+            parse("[dashboard]\nrotation = 270\n")
+                .unwrap()
+                .dashboard
+                .rotation,
+            270
+        );
         assert!(parse("[dashboard]\nbrightness = 150\n").is_err());
         assert!(parse("[dashboard]\nfps = 0\n").is_err());
         assert!(parse("[dashboard]\ninconnu = 1\n").is_err());

@@ -159,6 +159,15 @@ pub fn slide_fits() -> [(&'static str, &'static str); 2] {
         ("cover", tr("Remplir l'écran (rogner)")),
     ]
 }
+/// Orientations : `(degrés dans le sens horaire, libellé)`.
+pub fn rotations() -> [(u16, &'static str); 4] {
+    [
+        (0, tr("Normale")),
+        (90, tr("Quart de tour à droite (portrait)")),
+        (180, tr("Retournée (180°)")),
+        (270, tr("Quart de tour à gauche (portrait)")),
+    ]
+}
 pub fn on_exit_choices() -> [(OnExit, &'static str); 3] {
     [
         (OnExit::Keep, tr("Conserver la dernière image")),
@@ -1011,8 +1020,10 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     brightness_row.add_suffix(&settings_scale);
     let rotation = adw::ComboRow::builder()
         .title(tr("Orientation"))
-        .subtitle(tr("Retourne l'image si l'écran est monté tête en bas"))
-        .model(&string_list([tr("Normale"), tr("Retournée (180°)")]))
+        .subtitle(tr(
+            "Selon la position de l'écran ; les quarts de tour passent en portrait",
+        ))
+        .model(&string_list(rotations().map(|(_, label)| label)))
         .build();
     let fps = adw::SpinRow::with_range(0.5, 30.0, 0.5);
     fps.set_title(tr("Images par seconde"));

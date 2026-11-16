@@ -10,7 +10,9 @@ use tiny_skia::{
     Pixmap, Point, SpreadMode, Transform,
 };
 
-use super::{Area, BG, HEIGHT, MUTED, PANEL, Renderer, Rgb, TEXT, TRACK, WIDTH, Weight, color};
+use super::{Area, BG, MUTED, PANEL, Renderer, Rgb, TEXT, TRACK, Weight, color};
+#[cfg(test)]
+use super::{HEIGHT, WIDTH};
 
 /// Accent de la lecture en cours (barre de progression, icône).
 const ACCENT: Rgb = (45, 212, 191);
@@ -271,14 +273,18 @@ fn rounded_path(a: Area, radius: f32) -> Option<tiny_skia::Path> {
 }
 
 impl Renderer {
-    /// Horloge plein écran, lisible de loin. Renvoie l'image RGBA 1280×800.
+    /// Horloge plein écran, lisible de loin. Renvoie l'image RGBA 1280×800
+    /// (composée en portrait à 90 et 270°).
     pub fn render_clock(&mut self, time: NaiveDateTime, cfg: &ClockConfig, rotation: u16) -> &[u8] {
-        self.pixmap.fill(color(BG, 255));
+        self.begin(rotation);
+        let (cw, ch) = (self.w() as f32, self.h() as f32);
         let hm = time.format("%H:%M").to_string();
-        let (size, small) = if cfg.seconds {
-            (250.0, 100.0)
+        // Taille limitée par la largeur (chasse fixe : ≈ 0,6 em par caractère).
+        let (size, small): (f32, f32) = if cfg.seconds {
+            let size = 250.0_f32.min((cw - 80.0) / (0.6 * (5.0 + 3.0 * 0.4)));
+            (size, size * 0.4)
         } else {
-            (300.0, 0.0)
+            (300.0_f32.min((cw - 80.0) / (0.6 * 5.0)), 0.0)
         };
         let secs = format!(":{:02}", time.second());
         let hm_w = self.measure(size, Weight::Bold, &hm);
@@ -287,22 +293,23 @@ impl Renderer {
         } else {
             0.0
         };
-        let x = (WIDTH as f32 - hm_w - secs_w) / 2.0;
+        let x = (cw - hm_w - secs_w) / 2.0;
         // Ligne de base : chiffres (≈ 0,73 em) centrés, date en dessous.
         let digits_h = size * 0.73;
         let block_h = if cfg.date { digits_h + 120.0 } else { digits_h };
-        let baseline = (HEIGHT as f32 - block_h) / 2.0 + digits_h;
+        let baseline = (ch - block_h) / 2.0 + digits_h;
         self.text(x, baseline, size, Weight::Bold, TEXT, &hm);
         if cfg.seconds {
             self.text(x + hm_w, baseline, small, Weight::Bold, MUTED, &secs);
         }
         if cfg.date {
             let date = long_date(lightning_i18n::lang(), time.date());
-            let dw = self.measure(52.0, Weight::Regular, &date);
+            let date_size = 52.0_f32.min((cw - 80.0) / (0.6 * date.chars().count().max(1) as f32));
+            let dw = self.measure(date_size, Weight::Regular, &date);
             self.text(
-                (WIDTH as f32 - dw) / 2.0,
+                (cw - dw) / 2.0,
                 baseline + 120.0,
-                52.0,
+                date_size,
                 Weight::Regular,
                 MUTED,
                 &date,
@@ -320,10 +327,11 @@ impl Renderer {
         time: NaiveDateTime,
         rotation: u16,
     ) -> &[u8] {
-        let (w, h) = (WIDTH as f32, HEIGHT as f32);
+        self.begin(rotation);
+        let portrait = crate::rotate::is_portrait(rotation);
+        let (w, h) = (self.w() as f32, self.h() as f32);
         // Fond : teinte de la pochette en haut à gauche, fondue vers le noir.
         let tint = art.map_or(PANEL, |a| mix(BG, a.average(), 0.35));
-        self.pixmap.fill(color(BG, 255));
         if let Some(shader) = LinearGradient::new(
             Point::from_xy(0.0, 0.0),
             Point::from_xy(w * 0.7, h),
@@ -350,16 +358,26 @@ impl Renderer {
         self.text(w - 64.0 - cw, 76.0, 34.0, Weight::Bold, TEXT, &clock);
 
         let Some(track) = track else {
-            self.note_icon(w / 2.0, 300.0, 1.6, MUTED);
-            let title = tr("Aucune lecture en cours");
-            let tw = self.measure(48.0, Weight::Bold, title);
-            self.text((w - tw) / 2.0, 470.0, 48.0, Weight::Bold, TEXT, title);
-            let hint = tr("Lancez un morceau dans un lecteur compatible MPRIS");
-            let hw = self.measure(24.0, Weight::Regular, hint);
-            self.text((w - hw) / 2.0, 520.0, 24.0, Weight::Regular, MUTED, hint);
-            let hint = tr("(Spotify, Rhythmbox, Lollypop, navigateur…)");
-            let hw = self.measure(24.0, Weight::Regular, hint);
-            self.text((w - hw) / 2.0, 556.0, 24.0, Weight::Regular, MUTED, hint);
+            let mid = h / 2.0;
+            self.note_icon(w / 2.0, mid - 100.0, 1.6, MUTED);
+            let mut y = mid + 70.0;
+            for line in wrap_text(tr("Aucune lecture en cours"), w - 80.0, 2, |t| {
+                self.measure(48.0, Weight::Bold, t)
+            }) {
+                let tw = self.measure(48.0, Weight::Bold, &line);
+                self.text((w - tw) / 2.0, y, 48.0, Weight::Bold, TEXT, &line);
+                y += 58.0;
+            }
+            y -= 8.0;
+            let hint = tr("Lancez un morceau dans un lecteur compatible MPRIS \
+                        (Spotify, Rhythmbox, Lollypop, navigateur…)");
+            for line in wrap_text(hint, (w - 80.0).min(760.0), 3, |t| {
+                self.measure(24.0, Weight::Regular, t)
+            }) {
+                let hw = self.measure(24.0, Weight::Regular, &line);
+                self.text((w - hw) / 2.0, y, 24.0, Weight::Regular, MUTED, &line);
+                y += 36.0;
+            }
             return self.finish(rotation);
         };
 
@@ -373,27 +391,43 @@ impl Renderer {
         };
         self.text(64.0, 74.0, 22.0, Weight::Regular, MUTED, &header);
 
-        // Pochette (ou icône) à gauche.
-        let cover = Area {
-            x: 64.0,
-            y: 160.0,
-            w: 480.0,
-            h: 480.0,
+        // Pochette (ou icône) à gauche, en haut en portrait.
+        let cover = if portrait {
+            Area {
+                x: (w - 560.0) / 2.0,
+                y: 130.0,
+                w: 560.0,
+                h: 560.0,
+            }
+        } else {
+            Area {
+                x: 64.0,
+                y: 160.0,
+                w: 480.0,
+                h: 480.0,
+            }
         };
         if !art.is_some_and(|a| self.artwork(a, cover, 24.0)) {
             self.rounded(cover, 24.0, PANEL, 255);
             self.note_icon(cover.x + cover.w / 2.0, cover.y + cover.h / 2.0, 2.2, TRACK);
         }
 
-        // Textes à droite.
-        let (x, max_w) = (608.0, w - 608.0 - 64.0);
+        // Textes à droite, sous la pochette en portrait.
+        let (x, max_w) = if portrait {
+            (64.0, w - 128.0)
+        } else {
+            (608.0, w - 608.0 - 64.0)
+        };
         let title = if track.title.is_empty() {
             tr("Titre inconnu")
         } else {
             &track.title
         };
-        let mut y = 236.0;
-        let lines = wrap_text(title, max_w, 3, |s| self.measure(50.0, Weight::Bold, s));
+        let mut y = if portrait { 780.0 } else { 236.0 };
+        let max_lines = if portrait { 2 } else { 3 };
+        let lines = wrap_text(title, max_w, max_lines, |s| {
+            self.measure(50.0, Weight::Bold, s)
+        });
         for line in &lines {
             self.text(x, y, 50.0, Weight::Bold, TEXT, line);
             y += 62.0;
@@ -416,7 +450,9 @@ impl Renderer {
         }
 
         // État, progression et temps.
-        let state_y = 548.0;
+        // Bas de la pochette en paysage, bas de l'écran en portrait.
+        let shift = if portrait { h - 170.0 - 630.0 } else { 0.0 };
+        let state_y = 548.0 + shift;
         if track.playing {
             self.play_icon(x, state_y - 22.0, 24.0, ACCENT);
         } else {
@@ -430,7 +466,7 @@ impl Renderer {
         self.text(x + 40.0, state_y, 24.0, Weight::Regular, MUTED, state);
         let bar = Area {
             x,
-            y: 580.0,
+            y: 580.0 + shift,
             w: max_w,
             h: 10.0,
         };
@@ -451,7 +487,7 @@ impl Renderer {
             let tw = self.measure(22.0, Weight::Regular, &total);
             self.text(
                 bar.right() - tw,
-                630.0,
+                630.0 + shift,
                 22.0,
                 Weight::Regular,
                 MUTED,
@@ -459,16 +495,8 @@ impl Renderer {
             );
         }
         let pos = fmt_track_time(track.position);
-        self.text(x, 630.0, 22.0, Weight::Regular, MUTED, &pos);
+        self.text(x, 630.0 + shift, 22.0, Weight::Regular, MUTED, &pos);
         self.finish(rotation)
-    }
-
-    /// Rotation éventuelle puis données RGBA.
-    fn finish(&mut self, rotation: u16) -> &[u8] {
-        if rotation == 180 {
-            self.pixmap.pixels_mut().reverse();
-        }
-        self.pixmap.data()
     }
 
     /// Dessine la pochette recadrée (remplissage) aux coins arrondis.
@@ -820,6 +848,46 @@ mod tests {
         let _ = r.render_now_playing(Some(&track), Some(&broken), time, 180);
     }
 
+    #[test]
+    fn screens_in_the_four_orientations() {
+        let mut r = Renderer::new();
+        let time = at(2026, 11, 1, 9, 5, 7);
+        let art = demo_artwork(200);
+        let track = demo_track(Duration::ZERO);
+        let clock = ClockConfig {
+            seconds: true,
+            date: true,
+        };
+        let mut clocks = Vec::new();
+        for rotation in crate::rotate::ROTATIONS {
+            let c = r.render_clock(time, &clock, rotation).to_vec();
+            assert_eq!(c.len(), (WIDTH * HEIGHT * 4) as usize);
+            assert!(bright(&c) > 10_000, "{rotation}");
+            clocks.push(c);
+            let n = r
+                .render_now_playing(Some(&track), Some(&art), time, rotation)
+                .to_vec();
+            assert_eq!(n.len(), (WIDTH * HEIGHT * 4) as usize);
+            let idle = r.render_now_playing(None, None, time, rotation).to_vec();
+            assert!(bright(&idle) > 2_000, "{rotation}");
+        }
+        // 270° = 90° puis un demi-tour ; le portrait diffère du paysage.
+        assert_eq!(
+            pixel(&clocks[3], 10, 20),
+            pixel(&clocks[1], WIDTH - 11, HEIGHT - 21)
+        );
+        assert_ne!(clocks[0], clocks[1]);
+        // En portrait, les chiffres tiennent dans la largeur (800) : marges vides.
+        let upright = crate::rotate::quarter_turn(&clocks[1], WIDTH, HEIGHT, false);
+        let column_is_empty = |x: u32| {
+            (0..WIDTH).all(|y| {
+                let i = (y * HEIGHT + x) as usize * 4;
+                upright[i..i + 3] == [BG.0, BG.1, BG.2]
+            })
+        };
+        assert!(column_is_empty(5) && column_is_empty(HEIGHT - 6));
+    }
+
     /// Écrit les écrans dans `target/` pour inspection visuelle (PPM).
     #[test]
     fn writes_screens_for_inspection() {
@@ -863,6 +931,34 @@ mod tests {
         write(
             "now-playing-idle-test.ppm",
             r.render_now_playing(None, None, time, 0),
+        );
+        // Portrait, remis droit.
+        let upright = |data: &[u8]| crate::rotate::quarter_turn(data, WIDTH, HEIGHT, false);
+        let write_portrait = |name: &str, data: Vec<u8>| {
+            let mut ppm = format!("P6\n{HEIGHT} {WIDTH}\n255\n").into_bytes();
+            ppm.extend(
+                data.as_chunks::<4>()
+                    .0
+                    .iter()
+                    .flat_map(|p| [p[0], p[1], p[2]]),
+            );
+            let _ = std::fs::write(dir.join(name), ppm);
+        };
+        let clock = ClockConfig {
+            seconds: true,
+            date: true,
+        };
+        write_portrait(
+            "clock-portrait-test.ppm",
+            upright(r.render_clock(time, &clock, 90)),
+        );
+        write_portrait(
+            "now-playing-portrait-test.ppm",
+            upright(r.render_now_playing(Some(&track), Some(&art), time, 90)),
+        );
+        write_portrait(
+            "now-playing-idle-portrait-test.ppm",
+            upright(r.render_now_playing(None, None, time, 90)),
         );
     }
 }

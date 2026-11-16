@@ -6,7 +6,8 @@
 fps = 2.0
 # Qualité JPEG (1 à 100).
 quality = 85
-# Rotation logicielle de l'image : 0 ou 180.
+# Rotation logicielle de l'image, sens horaire : 0, 90, 180 ou 270.
+# À 90 et 270, les contenus sont composés en portrait (800 × 1280) puis tournés.
 rotation = 0
 # Luminosité de l'écran appliquée au démarrage (0 à 100). Décommenter pour l'activer.
 # brightness = 80

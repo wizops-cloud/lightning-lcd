@@ -260,6 +260,16 @@ ou s'il est verrouillé (service lancé hors session graphique), il reste dans
 qu'il répond. Le jeton n'apparaît jamais dans les journaux.
 « Vider le cache » supprime les photos importées.
 
+## Orientation
+
+`lightning ctl rotation 0|90|180|270` (ou page Réglages → Orientation) tourne l'image dans le sens
+des aiguilles d'une montre avant l'envoi. À 90 et 270°, tout est composé en portrait (800 × 1280)
+puis tourné : tableau de bord disposé en colonne (carte graphique et processeur l'un sous l'autre,
+autres panneaux deux par deux), image, vidéo, diaporama, horloge et lecture en cours. Si l'image
+apparaît à l'envers, choisir l'autre quart de tour.
+
+<img src="docs/dashboard-portrait.png" width="360" alt="Tableau de bord en portrait (90°), vu écran tourné">
+
 ## Horloge et lecture en cours
 
 - **Horloge** (`clock`) : l'heure en très grand, lisible de loin, avec la date en toutes lettres ;
@@ -338,7 +348,7 @@ Avec `color` ou `image`, une sortie d'aperçu maintient le programme ouvert jusq
 
 Facultative, dans `~/.config/lightning/config.toml` ; voir
 [packaging/config.example.toml](packaging/config.example.toml) (cadence, qualité JPEG,
-rotation 0/180, luminosité, panneaux affichés, disques, interface réseau, sorties,
+rotation 0/90/180/270, luminosité, panneaux affichés, disques, interface réseau, sorties,
 adresse HTTP, comportement à l'arrêt).
 
 ## Organisation
@@ -376,7 +386,7 @@ matériel non testé ».
 ## Limites connues
 
 - L'upload de médias dans la flash de l'écran (`transport`) n'est volontairement pas implémenté.
-- Rotation : 0 et 180° seulement (logicielle) ; la commande `rotate` du firmware n'est pas utilisée.
+- Rotation logicielle uniquement ; la commande `rotate` du firmware n'est pas utilisée.
 - Le retour à l'animation MSI d'origine demande de couper l'alimentation de l'écran.
 
 ## Contribuer

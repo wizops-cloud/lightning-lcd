@@ -12,7 +12,8 @@ use lightning_ipc::Mode;
 
 use crate::remote::{DaemonState, Remote, ServiceState, error_text};
 use crate::ui::{
-    Card, Ui, fits, flow_append, modes, on_exit_choices, orders, pages, panels, slide_fits,
+    Card, Ui, fits, flow_append, modes, on_exit_choices, orders, pages, panels, rotations,
+    slide_fits,
 };
 
 // ---------------------------------------------------------------- images
@@ -405,7 +406,9 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             if !ui.user_action() {
                 return;
             }
-            let degrees = if row.selected() == 1 { 180 } else { 0 };
+            let degrees = rotations()
+                .get(row.selected() as usize)
+                .map_or(0, |(degrees, _)| *degrees);
             let remote = remote.clone();
             call(
                 &ui,
@@ -994,7 +997,9 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
             ui.brightness_caption
                 .set_label(&trf("{level} %", &[("level", &level)]));
         }
-        ui.rotation.set_selected(u32::from(st.rotation == 180));
+        if let Some(i) = rotations().iter().position(|(d, _)| *d == st.rotation) {
+            ui.rotation.set_selected(i as u32);
+        }
         ui.fps.set_value(st.fps);
         for card in ui.hero_cards.iter().chain(&ui.content_cards) {
             card.button.set_active(card.mode.as_str() == st.mode);
@@ -1483,6 +1488,9 @@ mod tests {
         // Chaque panneau connu du démon a sa ligne, dans le même ordre.
         let names: Vec<&str> = panels().iter().map(|(n, ..)| *n).collect();
         assert_eq!(names, lightning_ipc::WIDGETS);
+        // Les orientations proposées sont celles que le démon accepte.
+        let degrees: Vec<u16> = rotations().iter().map(|(d, _)| *d).collect();
+        assert_eq!(degrees, [0, 90, 180, 270]);
         assert_eq!(plural(1, "photo", "photos"), "1 photo");
         assert_eq!(plural(3, "photo", "photos"), "3 photos");
         for hex in crate::ui::SWATCHES {
