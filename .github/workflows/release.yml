@@ -1,0 +1,81 @@
+name: Release
+
+# Une étiquette v* construit les binaires x86_64 et crée une release EN BROUILLON :
+# la publication reste une décision humaine, depuis l'interface de GitHub.
+# Lancement manuel (workflow_dispatch) : construction et archive seulement, sans release.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    # Ubuntu 24.04 : GTK 4.14 et libadwaita 1.5, les versions minimales de l'application.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dépendances système
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config libxkbcommon-dev libwayland-dev libx11-dev libx11-xcb-dev libgtk-4-dev libadwaita-1-dev dbus-daemon
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Version
+        id: version
+        run: |
+          crate=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "lightning") | .version')
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            version=${GITHUB_REF_NAME#v}
+            # L'étiquette doit correspondre à la version du workspace (préversions de test exceptées).
+            if [[ "$version" != "$crate" && "$version" != *-* ]]; then
+              echo "::error::étiquette $GITHUB_REF_NAME ≠ version $crate du Cargo.toml"; exit 1
+            fi
+          else
+            version="$crate-dev.${GITHUB_SHA::7}"
+          fi
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      - run: cargo test --workspace --release
+      - run: cargo build --release --locked -p lightning -p lightning-gtk
+      - name: Archive et sommes SHA-256
+        run: scripts/package-archive.sh "${{ steps.version.outputs.version }}" target/release dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lightning-lcd-${{ steps.version.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Release en brouillon
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd dist
+          sha256sum -c SHA256SUMS
+          notes="Binaires x86_64 (glibc ≥ 2.39, GTK ≥ 4.14, libadwaita ≥ 1.5).
+
+          Installation : \`tar xf lightning-lcd-*.tar.gz && cd lightning-lcd-*/ && ./install.sh\` (voir \`./install.sh --help\`).
+
+          Sommes SHA-256 :
+          \`\`\`
+          $(cat SHA256SUMS)
+          \`\`\`"
+          prerelease=()
+          [[ "$TAG" == *-* ]] && prerelease=(--prerelease)
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+            "${prerelease[@]}" --title "lightning-lcd ${TAG#v}" --notes "$notes" \
+            ./*.tar.gz lightning lightning-settings SHA256SUMS

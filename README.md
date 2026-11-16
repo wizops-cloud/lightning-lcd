@@ -17,6 +17,23 @@ référence, est conservée dans [legacy/python/](legacy/python/).
 
 ## Installation
 
+### Binaires précompilés
+
+Chaque version publiée sur la page [Releases](https://github.com/wizops-cloud/lightning-lcd/releases)
+fournit une archive x86_64 (glibc ≥ 2.39, GTK ≥ 4.14, libadwaita ≥ 1.5) et ses sommes SHA-256 :
+
+```sh
+sha256sum -c SHA256SUMS --ignore-missing
+tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
+./install.sh            # ~/.local/bin, application, service utilisateur, règle udev (sudo)
+./install.sh --help     # --prefix, --no-udev, --no-service, --uninstall
+```
+
+Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*` et
+créées en brouillon : elles ne sont publiées qu'après vérification humaine.
+
+### Depuis les sources
+
 Prérequis :
 
 | | Fedora | Debian / Ubuntu |
