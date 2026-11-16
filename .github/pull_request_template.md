@@ -1,24 +1,31 @@
-## Ce qui change
+<!-- English or French, as you prefer. · En français ou en anglais, au choix. -->
 
-<!-- Résumé, et l'issue concernée : « Closes #N ». -->
+## What changes · Ce qui change
+
+<!-- Summary, and the related issue: "Closes #N". · Résumé, et l'issue concernée. -->
 
 Closes #
 
-## Vérifications
+## Checks · Vérifications
 
-- [ ] `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` et
-      `cargo test --workspace` passent
-- [ ] Testé sans l'écran (`--no-lcd`, `--demo`, `--output window`/`http`) quand c'est possible
-- [ ] Testé sur le matériel : <!-- modèle de carte, PID, version du firmware — ou « non » -->
-- [ ] Captures régénérées (`scripts/screenshots.sh`) si l'interface change
-- [ ] README / `docs/PROTOCOL.md` mis à jour si besoin
+- [ ] `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and
+      `cargo test --workspace` pass · passent
+- [ ] Tested without the screen (`--no-lcd`, `--demo`, `--output window`/`http`) where possible ·
+      Testé sans l'écran quand c'est possible
+- [ ] Tested on hardware · Testé sur le matériel : <!-- card model, PID, firmware version, or "no" -->
+- [ ] Screenshots regenerated (`scripts/screenshots.sh`) if the interface changes · Captures
+      régénérées si l'interface change
+- [ ] Documentation updated in both languages (`X.md` and `X.fr.md`), changelog included, if
+      needed · Documentation mise à jour dans les deux langues, changelog compris, si besoin
 
-## Sécurité du matériel
+## Hardware safety · Sécurité du matériel
 
-- [ ] Aucune écriture dans la flash de l'écran (`transport`/`transported`), aucune commande
-      firmware non documentée dans `docs/PROTOCOL.md`
-- [ ] Aucune donnée personnelle (nom de machine, chemins `/home/…`, numéros de série, photos)
+- [ ] No write to the flash memory of the screen (`transport`/`transported`), no firmware command
+      that is not documented in `docs/PROTOCOL.md` · Aucune écriture dans la flash de l'écran,
+      aucune commande firmware non documentée
+- [ ] No personal data (host name, `/home/…` paths, serial numbers, photos) · Aucune donnée
+      personnelle
 
-## Non vérifié
+## Not verified · Non vérifié
 
-<!-- Ce qui n'a pas pu être testé, et pourquoi. -->
+<!-- What could not be tested, and why. · Ce qui n'a pas pu être testé, et pourquoi. -->

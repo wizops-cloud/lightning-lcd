@@ -118,6 +118,14 @@ jobs:
           \`\`\`
           $(cat dist/SHA256SUMS)
           \`\`\`
+
+          <details>
+          <summary>Notes en français</summary>
+
+          $(scripts/release-notes.sh "${VERSION%%-*}" CHANGELOG.fr.md)
+
+          Installation : mêmes commandes que ci-dessus (\`./install.sh --help\` répond en français si la session est en français).
+          </details>
           EOF
           } >notes.md
           prerelease=()

@@ -1,55 +1,59 @@
-# Contribuer à lightning-lcd
+# Contributing to lightning-lcd
 
-Merci de votre intérêt ! Ce document explique comment construire, tester et proposer une
-modification. Les échanges (issues, PR, messages de commit) se font de préférence en français ;
-l'anglais est accepté.
+*English · [Français](CONTRIBUTING.fr.md)*
 
-## Avant tout : la sécurité du matériel
+Thank you for your interest! This document explains how to build, test and submit a
+change. Issues and PRs can be written in English or in French, as you prefer. Existing code
+comments and commit messages are in French; both languages are accepted. Any user documentation
+you change must be changed in both languages (`X.md` in English and `X.fr.md` in French), and
+changelog entries go into both `CHANGELOG.md` and `CHANGELOG.fr.md`.
 
-L'écran équipe une carte graphique coûteuse et son firmware n'est pas documenté. Quelques règles
-ne se discutent pas :
+## First of all: hardware safety
 
-- **Jamais d'écriture dans la flash de l'écran.** Les commandes `transport` / `transported`
-  (upload de médias) ne sont pas implémentées et ne le seront pas ; une PR qui les ajoute sera
-  refusée.
-- **Pas de commande firmware inconnue.** N'envoyer que les requêtes décrites dans
-  [docs/PROTOCOL.md](docs/PROTOCOL.md). Une nouvelle requête doit y être documentée (ce qu'elle
-  fait, comment elle a été observée) dans la même PR.
-- **Pas de requête vendor USB en mode étendu** : elle fait réénumérer l'écran (voir PROTOCOL.md).
-- **Développer sans l'écran** autant que possible : `--no-lcd`, `--output window` ou `http`, et
-  `--demo` pour des métriques factices. Un seul processus pilote l'écran à la fois (verrou dans
-  `$XDG_RUNTIME_DIR`) : arrêter le service avant d'essayer une commande directe.
-- **Aucun code, logo ni fichier du constructeur** dans le dépôt (pilote décompilé, images de
-  l'application Windows…). Le projet est indépendant ; seuls les noms de produits sont cités pour
-  désigner le matériel compatible.
-- **Aucune donnée personnelle** dans les captures, journaux ou exemples (nom de machine, chemins
-  `/home/<utilisateur>`, numéros de série, photos).
+The screen is fitted to an expensive graphics card and its firmware is undocumented. A few rules
+are not negotiable:
 
-## Construire
+- **Never write to the screen's flash.** The `transport` / `transported` commands
+  (media upload) are not implemented and will not be; a PR that adds them will be
+  rejected.
+- **No unknown firmware command.** Only send the requests described in
+  [docs/PROTOCOL.md](docs/PROTOCOL.md). A new request must be documented there (what it
+  does, how it was observed) in the same PR.
+- **No USB vendor request in extended mode**: it makes the screen re-enumerate (see PROTOCOL.md).
+- **Develop without the screen** as much as possible: `--no-lcd`, `--output window` or `http`, and
+  `--demo` for fake metrics. Only one process drives the screen at a time (lock in
+  `$XDG_RUNTIME_DIR`): stop the service before trying a direct command.
+- **No vendor code, logo or file** in the repository (decompiled driver, images from
+  the Windows application, etc.). The project is independent; product names are only mentioned to
+  identify the compatible hardware.
+- **No personal data** in captures, logs or examples (host name, `/home/<user>`
+  paths, serial numbers, photos).
 
-Prérequis (Fedora) :
+## Building
+
+Prerequisites (Fedora):
 
 ```sh
 sudo dnf install -y libusb1-devel gtk4-devel libadwaita-devel dbus-daemon
 ```
 
-Debian / Ubuntu : `libusb-1.0-0-dev libgtk-4-dev libadwaita-1-dev libxkbcommon-dev
-libwayland-dev libx11-dev libx11-xcb-dev dbus-daemon`. Rust stable (édition 2024) via `rustup`.
+Debian / Ubuntu: `libusb-1.0-0-dev libgtk-4-dev libadwaita-1-dev libxkbcommon-dev
+libwayland-dev libx11-dev libx11-xcb-dev dbus-daemon`. Stable Rust (2024 edition) via `rustup`.
 
 ```sh
 cargo build --release                 # lightning + lightning-settings
-cargo build --release -p lightning    # sans GTK
+cargo build --release -p lightning    # without GTK
 ```
 
-Essayer sans toucher à l'écran :
+Trying it without touching the screen:
 
 ```sh
 cargo run -p lightning -- --no-lcd --demo --output window dashboard
 cargo run -p lightning -- --no-lcd --demo dashboard --png /tmp/apercu.png
 ```
 
-Pour essayer l'application de réglage sans perturber un service déjà installé, lancer démon et
-application sur un bus de session privé :
+To try the settings application without disturbing an already installed service, run the daemon
+and the application on a private session bus:
 
 ```sh
 dbus-run-session -- bash -c '
@@ -57,46 +61,48 @@ dbus-run-session -- bash -c '
   sleep 1; target/release/lightning-settings'
 ```
 
-## Tester
+## Testing
 
-La CI exécute exactement ces trois commandes ; elles doivent passer avant toute PR :
+CI runs exactly these three commands; they must pass before any PR:
 
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace        # les tests D-Bus lancent leur propre dbus-daemon
+cargo test --workspace        # the D-Bus tests start their own dbus-daemon
 ```
 
-Les tests n'accèdent jamais au matériel. Si votre PR change l'interface, régénérez les captures
-avec `scripts/screenshots.sh` (compositeur sans écran, démon de démonstration, bus privé).
+The tests never access the hardware. If your PR changes the interface, regenerate the screenshots
+with `scripts/screenshots.sh` (headless compositor, demo daemon, private bus).
 
-## Proposer une modification
+## Submitting a change
 
-1. Ouvrez d'abord une issue pour un changement important, afin d'en discuter.
-2. Une branche et une PR par sujet, courte de préférence. Remplissez le modèle de PR : ce qui a
-   été vérifié, et sur quel matériel le cas échéant.
-3. La PR référence l'issue (`Closes #N`) et passe la CI.
-4. Un changement visible par l'utilisateur ajoute une ligne à la section `[Unreleased]` de
-   [CHANGELOG.md](CHANGELOG.md) (en anglais). La publication des versions est décrite dans
-   [RELEASING.md](RELEASING.md).
+1. For a significant change, open an issue first so it can be discussed.
+2. One branch and one PR per topic, preferably short. Fill in the PR template: what was
+   verified, and on which hardware if applicable.
+3. The PR references the issue (`Closes #N`) and passes CI.
+4. A user-visible change adds a line to the `[Unreleased]` section of
+   [CHANGELOG.md](CHANGELOG.md) (in English) and of [CHANGELOG.fr.md](CHANGELOG.fr.md) (in
+   French). The release process is described in [RELEASING.md](RELEASING.md).
 
-### Style des commits
+### Commit style
 
-- Messages en français, première ligne courte (≤ 72 caractères) sous la forme
-  `Zone : ce qui change` — par exemple `Diaporama : fondu enchaîné réglable` ou
-  `Protocole : relecture du rapport HID conn`.
-- Corps facultatif, séparé par une ligne vide : le pourquoi plutôt que le comment.
-- Un commit = un changement cohérent qui compile et passe les tests.
+- Existing messages are in French; English is accepted too. Short first line (≤ 72 characters)
+  in the form `Area: what changes` (`Zone : ce qui change` in French), for example
+  `Diaporama : fondu enchaîné réglable` or `Protocole : relecture du rapport HID conn`.
+- Optional body, separated by a blank line: the why rather than the how.
+- One commit = one coherent change that compiles and passes the tests.
 
-### Style du code
+### Code style
 
-- `rustfmt` et `clippy` font foi. Commentaires et messages d'erreur en français.
-- Pas de `unwrap()` sur des données venant du matériel, du réseau ou de l'utilisateur.
-- Toute logique testable sans matériel (analyse de trames, configuration, ordre des panneaux…)
-  a ses tests unitaires.
+- `rustfmt` and `clippy` are authoritative. Existing comments are in French; English is accepted
+  too. User-visible messages are written in French in
+  the code and translated to English in `crates/lightning-i18n/po/en-*.po`.
+- No `unwrap()` on data coming from the hardware, the network or the user.
+- Any logic that can be tested without hardware (frame parsing, configuration, panel order, etc.)
+  has its unit tests.
 
-## Licence
+## License
 
-Le projet est sous **GPL-3.0-only**. En proposant une contribution, vous acceptez qu'elle soit
-distribuée sous cette licence et vous certifiez en avoir le droit (code écrit par vous, ou sous
-licence compatible et cité).
+The project is licensed under **GPL-3.0-only**. By submitting a contribution, you agree that it
+is distributed under this license and you certify that you have the right to do so (code written
+by you, or under a compatible license and credited).

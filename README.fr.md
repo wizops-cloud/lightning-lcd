@@ -14,7 +14,7 @@ Une application GNOME, **Lightning**, règle le tout sans ligne de commande :
 ![Application Lightning](docs/screenshots/accueil-sombre.png)
 
 Le protocole (rétro-ingénierie du pilote et du service Windows) est décrit dans
-[docs/PROTOCOL.md](docs/PROTOCOL.md). L'implémentation Python d'origine, qui a servi de
+[docs/PROTOCOL.fr.md](docs/PROTOCOL.fr.md). L'implémentation Python d'origine, qui a servi de
 référence, est conservée dans [legacy/python/](legacy/python/).
 
 ## Installation
@@ -34,7 +34,7 @@ tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
 Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*`, avec
 une attestation de provenance (`gh attestation verify <fichier> --repo wizops-cloud/lightning-lcd`),
 et créées en brouillon : elles ne sont publiées qu'après vérification. Les changements de chaque
-version sont dans [CHANGELOG.md](CHANGELOG.md), le processus dans [RELEASING.md](RELEASING.md).
+version sont dans [CHANGELOG.fr.md](CHANGELOG.fr.md), le processus dans [RELEASING.fr.md](RELEASING.fr.md).
 
 ### Fedora (RPM)
 
@@ -363,7 +363,7 @@ adresse HTTP, comportement à l'arrêt).
 | `crates/lightning-ipc` | Interface D-Bus partagée (noms, proxy zbus) |
 | `crates/lightning-gtk` | Application GNOME `lightning-settings` (GTK 4 + libadwaita) |
 | `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration, `install.sh`, paquet RPM (`rpm/`), Flatpak (`flatpak/`), AppStream |
-| `docs/PROTOCOL.md` | Protocole et historique de la rétro-ingénierie |
+| `docs/PROTOCOL.fr.md` | Protocole et historique de la rétro-ingénierie |
 | `legacy/` | Scripts Python d'origine (référence historique) |
 
 ```rust
@@ -394,9 +394,9 @@ matériel non testé ».
 ## Contribuer
 
 Construction, tests, style des commits et règles de sécurité du matériel :
-[CONTRIBUTING.md](CONTRIBUTING.md). Les bogues et demandes passent par les
+[CONTRIBUTING.fr.md](CONTRIBUTING.fr.md). Les bogues et demandes passent par les
 [modèles d'issue](https://github.com/wizops-cloud/lightning-lcd/issues/new/choose) ; une
-vulnérabilité se signale en privé, voir [SECURITY.md](SECURITY.md).
+vulnérabilité se signale en privé, voir [SECURITY.fr.md](SECURITY.fr.md).
 
 ## Licence et avertissements
 

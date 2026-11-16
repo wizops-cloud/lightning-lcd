@@ -1,0 +1,84 @@
+name: Bug report · Signaler un bogue
+description: Something does not work as expected (screen, daemon, application). · Quelque chose ne marche pas comme prévu (écran, démon, application).
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! Write in English or in French. Remove any personal data from your logs and
+        screenshots (host name, `/home/…` paths, serial numbers). For a security issue, follow
+        [SECURITY.md](https://github.com/wizops-cloud/lightning-lcd/blob/main/SECURITY.md) instead.
+
+        Merci ! Écrivez en français ou en anglais. Retirez de vos journaux et captures toute
+        donnée personnelle (nom de machine, chemins `/home/…`, numéros de série). Pour une faille
+        de sécurité, suivez plutôt
+        [SECURITY.fr.md](https://github.com/wizops-cloud/lightning-lcd/blob/main/SECURITY.fr.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happens, and what you expected. · Ce qui se passe, et ce que vous attendiez.
+    validations:
+      required: true
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Steps to reproduce · Étapes pour reproduire
+      placeholder: |
+        1. lightning ctl mode slideshow
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: carte
+    attributes:
+      label: Graphics card model · Modèle de carte graphique
+      placeholder: MSI GeForce RTX 5090 32G Lightning Z
+    validations:
+      required: true
+  - type: input
+    id: usb
+    attributes:
+      label: USB ID of the screen · Identifiant USB de l'écran
+      description: "Output of `lsusb -d 0db0:` (VID:PID, no serial number). · Sortie de `lsusb -d 0db0:` (VID:PID, sans numéro de série)."
+      placeholder: "Bus 001 Device 004: ID 0db0:7881 Micro Star International …"
+    validations:
+      required: true
+  - type: textarea
+    id: firmware
+    attributes:
+      label: Firmware state and versions · État et versions du firmware
+      description: |
+        Output of `lightning ctl status` (daemon running) or `lightning status` (service stopped).
+        Sortie de `lightning ctl status` (démon lancé) ou de `lightning status` (service arrêté).
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: lightning-lcd version · Version de lightning-lcd
+      description: "`lightning --version`, or the commit if built from source. · `lightning --version`, ou le commit si construit depuis les sources."
+    validations:
+      required: true
+  - type: input
+    id: systeme
+    attributes:
+      label: Distribution, desktop and kernel · Distribution, bureau et noyau
+      placeholder: Fedora 43, GNOME 49 (Wayland), kernel 6.17
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation
+      options:
+        - From source (cargo) · Depuis les sources
+        - Release archive · Archive de release
+        - RPM / COPR
+        - Flatpak (application only · application seule)
+        - Other · Autre
+  - type: textarea
+    id: journaux
+    attributes:
+      label: Logs · Journaux
+      description: "`journalctl --user -u lightning-dashboard -b`, or the command run again with `-vv`. · Ou la commande relancée avec `-vv`."
+      render: text

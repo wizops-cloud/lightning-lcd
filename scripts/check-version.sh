@@ -6,7 +6,7 @@
 #                                       # a une section datée pour cette version
 #
 # Sources comparées : Cargo.toml (workspace), packaging/rpm/lightning-lcd.spec,
-# packaging/cloud.wizops.Lightning.metainfo.xml (première entrée <release>), CHANGELOG.md.
+# packaging/cloud.wizops.Lightning.metainfo.xml (première entrée <release>), CHANGELOG.md et sa traduction CHANGELOG.fr.md.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -34,5 +34,6 @@ if [[ $# -ge 1 ]]; then
     [[ $changelog_date == "$meta_date" ]] || fail "dates différentes : CHANGELOG $changelog_date, metainfo $meta_date"
     grep -q "^\[$cargo_version\]: " CHANGELOG.md || fail "CHANGELOG.md : lien « [$cargo_version]: … » absent en bas de fichier"
     [[ -n $(scripts/release-notes.sh "$cargo_version") ]] || fail "CHANGELOG.md : section $cargo_version vide"
+    grep -q "^## \[$cargo_version\] - $changelog_date\$" CHANGELOG.fr.md || fail "CHANGELOG.fr.md : pas de section « ## [$cargo_version] - $changelog_date »"
 fi
 echo "$cargo_version"

@@ -108,7 +108,7 @@ appstreamcli validate --no-net %{buildroot}%{_metainfodir}/cloud.wizops.Lightnin
 %files
 %license LICENSE LICENSE.dependencies cargo-vendor.txt
 %license crates/lightning-dashboard/assets/OFL.txt
-%doc README.md docs/PROTOCOL.md packaging/config.example.toml
+%doc README.md README.fr.md docs/PROTOCOL.md docs/PROTOCOL.fr.md packaging/config.example.toml packaging/config.example.fr.toml
 %{_bindir}/lightning
 %{_udevrulesdir}/70-lightning-lcd.rules
 %{_userunitdir}/lightning-dashboard.service

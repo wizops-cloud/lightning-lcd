@@ -1,88 +1,89 @@
-# Exemple de configuration : à copier dans ~/.config/lightning/config.toml
-# Toutes les clés sont facultatives ; les valeurs ci-dessous sont les défauts.
+# Example configuration: copy it to ~/.config/lightning/config.toml
+# Every key is optional; the values below are the defaults.
+# Version française : config.example.fr.toml
 
 [dashboard]
-# Images par seconde envoyées à l'écran (0.1 à 30).
+# Frames per second sent to the screen (0.1 to 30).
 fps = 2.0
-# Qualité JPEG (1 à 100).
+# JPEG quality (1 to 100).
 quality = 85
-# Rotation logicielle de l'image, sens horaire : 0, 90, 180 ou 270.
-# À 90 et 270, les contenus sont composés en portrait (800 × 1280) puis tournés.
+# Software rotation of the picture, clockwise: 0, 90, 180 or 270.
+# At 90 and 270, contents are laid out in portrait (800 × 1280), then rotated.
 rotation = 0
-# Luminosité de l'écran appliquée au démarrage (0 à 100). Décommenter pour l'activer.
+# Screen brightness applied at startup (0 to 100). Uncomment to enable.
 # brightness = 80
-# Panneaux affichés.
+# Panels shown.
 widgets = ["gpu", "cpu", "memory", "disks", "network"]
-# Points de montage du panneau disques.
+# Mount points of the disks panel.
 disks = ["/", "/home"]
-# Interface réseau suivie ; par défaut la somme des interfaces physiques.
+# Network interface to follow; by default the sum of the physical interfaces.
 # interface = "eth0"
-# Nombre de points des mini-historiques.
+# Number of points in the small history graphs.
 history = 120
 
 [output]
-# Sorties actives : "lcd" (l'écran réel), "window" (fenêtre d'aperçu), "http" (navigateur).
+# Active outputs: "lcd" (the real screen), "window" (preview window), "http" (browser).
 outputs = ["lcd"]
-# Adresse du serveur d'aperçu (sortie "http"). 127.0.0.1 = cette machine uniquement.
+# Address of the preview server ("http" output). 127.0.0.1 = this machine only.
 http_addr = "127.0.0.1:7881"
-# Bandeau de debug dans la fenêtre d'aperçu (touche O pour le basculer).
+# Debug banner in the preview window (O key to toggle).
 overlay = true
-# Rotation simulée dans la fenêtre d'aperçu : 0, 90, 180 ou 270 (touche R).
+# Simulated rotation in the preview window: 0, 90, 180 or 270 (R key).
 preview_rotation = 0
-# À l'arrêt : "keep" (dernière image), "blank" (écran noir « arrêté »),
-# "restore" (rend la main au firmware : animation MSI d'origine).
+# On exit: "keep" (last picture), "blank" (black "stopped" screen),
+# "restore" (hands the screen back to the firmware: original MSI animation).
 on_exit = "keep"
-# Accepter aussi les écrans USB 0db0:7880 à 0db0:7919, déclarés par le pilote Windows
-# mais jamais testés (défaut : 0db0:7881 seul). Équivaut à --any-supported-pid.
+# Also accept the USB screens 0db0:7880 to 0db0:7919, declared by the Windows driver
+# but never tested (default: 0db0:7881 only). Same as --any-supported-pid.
 any_supported_pid = false
 
-# Contenu affiché par le démon (`lightning daemon`), modifiable à chaud depuis
-# l'application de réglage ou `lightning ctl`.
+# Content shown by the daemon (`lightning daemon`), changed live from the settings
+# application or `lightning ctl`.
 [daemon]
-# "dashboard", "image", "video", "color", "slideshow", "clock", "now_playing" ou "msi_animation".
+# "dashboard", "image", "video", "color", "slideshow", "clock", "now_playing" or "msi_animation".
 mode = "dashboard"
-# Image du mode "image" (chemin absolu) et son ajustement : "cover", "contain", "stretch".
+# Picture of the "image" mode (absolute path) and how it fits: "cover", "contain", "stretch".
 image_path = ""
 image_fit = "cover"
-# Vidéo du mode "video" (chemin absolu ou URL lisible par ffmpeg), lue en boucle ou non.
+# Video of the "video" mode (absolute path or URL readable by ffmpeg), looped or not.
 video_path = ""
 video_loop = true
-# Couleur du mode "color" (RRGGBB).
+# Colour of the "color" mode (RRGGBB).
 color = "101418"
 
-# Mode "slideshow" : diaporama de photos.
+# "slideshow" mode: photo slideshow.
 [slideshow]
-# Dossiers parcourus récursivement (JPEG, PNG, WebP, BMP ; HEIC si construit avec la
-# fonctionnalité heic). Le cache Google Photos (~/.cache/lightning/google-photos) s'y
-# ajoute tout seul après un import.
+# Folders scanned recursively (JPEG, PNG, WebP, BMP; HEIC if built with the heic
+# feature). The Google Photos cache (~/.cache/lightning/google-photos) is added
+# automatically after an import.
 folders = []
-# Durée d'affichage de chaque photo, en secondes.
+# How long each photo is shown, in seconds.
 interval_s = 15.0
-# "random" ou "chronological" (date de prise de vue EXIF, sinon date du fichier).
+# "random" or "chronological" (EXIF capture date, otherwise file date).
 order = "random"
-# "cover" (remplir en rognant) ou "contain" (photo entière sur fond flou).
+# "cover" (fill and crop) or "contain" (whole photo on a blurred background).
 fit = "contain"
-# Fondu enchaîné entre deux photos, en millisecondes (0 = aucun).
+# Cross-fade between two photos, in milliseconds (0 = none).
 transition_ms = 600
-# Légende (date et album) et petite horloge.
+# Caption (date and album) and small clock.
 overlay = true
 clock = true
 
-# Mode "clock" : horloge et date en plein écran.
+# "clock" mode: full-screen clock and date.
 [clock]
-# Afficher les secondes.
+# Show seconds.
 seconds = false
-# Afficher la date sous l'heure.
+# Show the date below the time.
 date = true
 
-# Mode "now_playing" : morceau en cours (lecteurs compatibles MPRIS : Spotify,
-# Rhythmbox, Lollypop, navigateurs…).
+# "now_playing" mode: current track (MPRIS-compatible players: Spotify,
+# Rhythmbox, Lollypop, browsers…).
 [now_playing]
-# Lecteur préféré : partie de son nom MPRIS ("spotify", "firefox"…) ; vide = le premier qui joue.
+# Preferred player: part of its MPRIS name ("spotify", "firefox"…); empty = the first one playing.
 player = ""
 
-# Import Google Photos (Picker API) : client OAuth de type « application de bureau »
-# créé dans votre Google Cloud Console (voir le README).
+# Google Photos import (Picker API): OAuth client of type "desktop application"
+# created in your Google Cloud Console (see the README).
 [google]
 client_id = ""
 client_secret = ""

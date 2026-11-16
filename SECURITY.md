@@ -1,35 +1,35 @@
-# Politique de sécurité
+# Security policy
 
-## Versions prises en charge
+*English · [Français](SECURITY.fr.md)*
 
-Seule la dernière version publiée (et la branche `main`) reçoit des correctifs de sécurité.
+## Supported versions
 
-## Signaler une vulnérabilité
+Only the latest published version (and the `main` branch) receives security fixes.
 
-**Ne publiez pas de vulnérabilité dans une issue publique.** Utilisez de préférence le
-signalement privé de GitHub (onglet *Security* → *Report a vulnerability*) ou écrivez à
-**contact@wizops.fr** avec :
+## Reporting a vulnerability
 
-- la version (`lightning --version`, `lightning-settings --version`) et la distribution ;
-- la description du problème et son impact ;
-- les étapes pour le reproduire, idéalement sans le matériel (`--no-lcd --demo`).
+**Do not disclose a vulnerability in a public issue.** Preferably use GitHub's private reporting
+(*Security* tab → *Report a vulnerability*) or write to **contact@wizops.fr** with:
 
-Nous accusons réception sous 7 jours et visons un correctif sous 30 jours selon la gravité. Le
-signalement est crédité dans les notes de version, sauf si vous préférez rester anonyme.
+- the version (`lightning --version`, `lightning-settings --version`) and the distribution;
+- a description of the problem and its impact;
+- the steps to reproduce it, ideally without the hardware (`--no-lcd --demo`).
 
-## Périmètre
+We acknowledge reports within 7 days and aim for a fix within 30 days depending on severity.
+Reporters are credited in the release notes, unless you prefer to remain anonymous.
 
-Sont notamment concernés :
+## Scope
 
-- le démon `lightning daemon` et son interface D-Bus `cloud.wizops.Lightning1` (bus de session :
-  tout processus de l'utilisateur peut le piloter, c'est voulu ; une élévation au-delà de cet
-  utilisateur ne l'est pas) ;
-- l'aperçu HTTP (`--output http`), en lecture seule et **sans authentification** : il écoute sur
-  `127.0.0.1` par défaut ; l'ouvrir sur le réseau est un choix explicite de l'utilisateur ;
-- la règle udev (`TAG+="uaccess"` limité à `0db0:7881`) et l'unité systemd utilisateur ;
-- le stockage du jeton Google Photos (`~/.config/lightning/google.json`, mode 0600) et le
-  téléchargement des photos choisies ;
-- le décodage des images, vidéos (via `ffmpeg`) et fichiers de configuration.
+In scope, in particular:
 
-Hors périmètre : les défauts du firmware de l'écran lui-même (à signaler au constructeur), et les
-attaques qui supposent déjà un accès physique ou le compte de l'utilisateur.
+- the `lightning daemon` daemon and its D-Bus interface `cloud.wizops.Lightning1` (session bus:
+  any process of the user can drive it, by design; an escalation beyond that user is not);
+- the HTTP preview (`--output http`), read-only and **unauthenticated**: it listens on
+  `127.0.0.1` by default; exposing it on the network is an explicit choice of the user;
+- the udev rule (`TAG+="uaccess"` limited to `0db0:7881`) and the systemd user unit;
+- the storage of the Google Photos token (`~/.config/lightning/google.json`, mode 0600) and the
+  download of the selected photos;
+- the decoding of images, videos (through `ffmpeg`) and configuration files.
+
+Out of scope: defects in the firmware of the screen itself (to be reported to the vendor), and
+attacks that already assume physical access or the user's account.

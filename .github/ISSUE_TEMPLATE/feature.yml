@@ -1,0 +1,36 @@
+name: Feature request · Proposer une amélioration
+description: An idea for a feature, a panel, hardware to support… · Une idée de fonction, de panneau, de matériel à prendre en charge…
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Write in English or in French. · Écrivez en français ou en anglais.
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Need · Besoin
+      description: The problem to solve or the intended use, rather than the solution. · Le problème à résoudre ou l'usage visé, plutôt que la solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: Proposal · Proposition
+      description: What you have in mind (interface, command, configuration option…). · Ce que vous imaginez (interface, commande, option de configuration…).
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered · Alternatives envisagées
+  - type: input
+    id: materiel
+    attributes:
+      label: Hardware concerned · Matériel concerné
+      description: "For another screen or card: model and output of `lsusb -d 0db0:`. · Pour un autre écran ou une autre carte : modèle et sortie de `lsusb -d 0db0:`."
+  - type: checkboxes
+    id: securite
+    attributes:
+      label: Hardware safety · Sécurité du matériel
+      options:
+        - label: The request does not involve writing to the flash memory of the screen. · La demande n'implique pas d'écrire dans la mémoire flash de l'écran.
+          required: true

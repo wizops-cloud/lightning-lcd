@@ -1,43 +1,47 @@
-# Publier une version
+# Publishing a release
 
-Ce document décrit le processus complet, de la branche `main` à la release publiée. Tout est
-outillé par `scripts/release.sh` ; rien n'est publié sans la dernière commande.
+*English · [Français](RELEASING.fr.md)*
 
-## Vue d'ensemble
+This document describes the whole process, from the `main` branch to the published release.
+Everything is driven by `scripts/release.sh`; nothing is published before its last command.
 
-| Étape | Qui | Quoi |
+## Overview
+
+| Step | Who | What |
 | --- | --- | --- |
-| CI (`.github/workflows/ci.yml`) | chaque push sur `main`, chaque PR | cohérence de la version, scripts shell, `fmt`, `clippy -D warnings`, tests (y compris `heic`) |
-| Préparation | mainteneur | version, `CHANGELOG.md`, metainfo, spec RPM : un commit sur `main` |
-| Étiquette | `scripts/release.sh tag` | vérifications puis étiquette annotée `vX.Y.Z` poussée |
-| CD (`.github/workflows/release.yml`) | déclenchée par l'étiquette | revérifie, teste, construit, atteste, crée la release **en brouillon** |
-| Contrôle | `scripts/release.sh verify` | télécharge le brouillon : sommes, attestations, contenu, version des binaires |
-| Publication | `scripts/release.sh publish` | refait le contrôle puis publie |
+| CI (`.github/workflows/ci.yml`) | every push to `main`, every PR | version consistency, shell scripts, `fmt`, `clippy -D warnings`, tests (including `heic`) |
+| Preparation | maintainer | version, `CHANGELOG.md` and `CHANGELOG.fr.md`, metainfo, RPM spec: one commit on `main` |
+| Tag | `scripts/release.sh tag` | checks, then pushes the annotated tag `vX.Y.Z` |
+| CD (`.github/workflows/release.yml`) | triggered by the tag | checks again, tests, builds, attests, creates the release **as a draft** |
+| Verification | `scripts/release.sh verify` | downloads the draft: checksums, attestations, contents, version of the binaries |
+| Publication | `scripts/release.sh publish` | verifies again, then publishes |
 
-## Numérotation
+## Version numbers
 
-[Semantic Versioning](https://semver.org/lang/fr/). Tant que la version est `0.x` : `0.x+1.0`
-pour une nouveauté ou un changement incompatible (configuration, interface D-Bus, ligne de
-commande), `0.x.y+1` pour des corrections. La version est écrite à quatre endroits, que
-`scripts/check-version.sh` compare (en CI à chaque push) :
+[Semantic Versioning](https://semver.org/). While the version is `0.x`: `0.x+1.0` for a new
+feature or an incompatible change (configuration, D-Bus interface, command line), `0.x.y+1` for
+fixes. The version is written in four places, which `scripts/check-version.sh` compares (in CI on
+every push):
 
-- `Cargo.toml` (`[workspace.package]`), d'où `Cargo.lock` ;
-- `packaging/rpm/lightning-lcd.spec` (`Version:` et `%changelog`) ;
-- `packaging/cloud.wizops.Lightning.metainfo.xml` (première entrée `<release>`, avec la date) ;
-- `CHANGELOG.md` (section `## [X.Y.Z] - AAAA-MM-JJ` et lien en bas de fichier).
+- `Cargo.toml` (`[workspace.package]`), hence `Cargo.lock`;
+- `packaging/rpm/lightning-lcd.spec` (`Version:` and `%changelog`);
+- `packaging/cloud.wizops.Lightning.metainfo.xml` (first `<release>` entry, with the date);
+- `CHANGELOG.md` (section `## [X.Y.Z] - YYYY-MM-DD` and link at the bottom of the file), and its
+  translation `CHANGELOG.fr.md`, maintained by hand.
 
-## 1. Préparer
+## 1. Prepare
 
-1. Dans `CHANGELOG.md`, renommer le contenu de `[Unreleased]` en `## [X.Y.Z] - AAAA-MM-JJ`
-   (laisser une section `[Unreleased]` vide au-dessus) et mettre à jour les deux liens du bas.
-   Cette section devient telle quelle les notes de la release : l'écrire pour l'utilisateur, en
-   anglais, en disant ce qui a été vérifié sur le matériel et ce qui ne l'a pas été.
-2. Mettre la version dans `Cargo.toml`, puis `cargo check --workspace` pour régénérer `Cargo.lock`.
-3. Mettre à jour la spec RPM (`Version:`, `Release: 1`, entrée `%changelog`) et ajouter l'entrée
-   `<release>` en tête de la metainfo, avec la même date que le CHANGELOG.
-4. Si `Cargo.lock` a changé depuis la dernière version : régénérer
-   `packaging/flatpak/cargo-sources.json` et relire le champ `License:` de la spec (voir le README).
-5. Vérifier puis committer et pousser sur `main` :
+1. In `CHANGELOG.md`, rename the content of `[Unreleased]` to `## [X.Y.Z] - YYYY-MM-DD` (leave an
+   empty `[Unreleased]` section above it) and update the two links at the bottom. This section
+   becomes the release notes as is: write it for the user, in English, stating what was verified
+   on the hardware and what was not. Copy the same section, translated, into `CHANGELOG.fr.md`.
+2. Set the version in `Cargo.toml`, then run `cargo check --workspace` to regenerate `Cargo.lock`.
+3. Update the RPM spec (`Version:`, `Release: 1`, `%changelog` entry) and add the `<release>`
+   entry at the top of the metainfo, with the same date as the changelog.
+4. If `Cargo.lock` changed since the last version: regenerate
+   `packaging/flatpak/cargo-sources.json` and review the `License:` field of the spec (see the
+   README).
+5. Check, then commit and push to `main`:
 
    ```sh
    scripts/check-version.sh vX.Y.Z
@@ -45,61 +49,59 @@ commande), `0.x.y+1` pour des corrections. La version est écrite à quatre endr
    git commit -am "Version X.Y.Z" && git push origin main
    ```
 
-6. Pour une version qui touche au pilote ou au protocole : essai sur l'écran réel avant
-   l'étiquette (connexion, un contenu de chaque famille, arrêt propre). La CI ne peut pas le faire.
+6. For a version that touches the driver or the protocol: try it on the real screen before
+   tagging (connection, one content of each family, clean stop). The CI cannot do that.
 
-## 2. Étiqueter
+## 2. Tag
 
-Attendre que la CI du commit soit verte, puis :
+Wait until the CI of the commit is green, then:
 
 ```sh
-scripts/release.sh check    # facultatif : les vérifications seules
+scripts/release.sh check    # optional: the checks only
 scripts/release.sh tag
 ```
 
-`tag` refuse de continuer si : la version n'est pas cohérente, l'arbre n'est pas propre, on n'est
-pas sur `main` à jour avec `origin/main`, l'étiquette existe déjà, la CI du commit n'est pas
-verte, ou l'adresse `git config user.email` n'est pas du domaine du projet (elle figure dans
-l'étiquette publique ; `RELEASE_EMAIL_DOMAIN=` pour un fork).
+`tag` refuses to go on if: the version is not consistent, the tree is not clean, you are not on
+`main` up to date with `origin/main`, the tag already exists, the CI of the commit is not green,
+or the `git config user.email` address is outside the project's domain (it appears in the public
+tag; set `RELEASE_EMAIL_DOMAIN=` for a fork).
 
-## 3. Contrôler le brouillon
+## 3. Verify the draft
 
-L'étiquette déclenche la CD (une dizaine de minutes). Elle échoue si l'étiquette ne correspond
-pas à la version, n'est pas sur `main`, si un test échoue ou si un binaire n'annonce pas la bonne
-version. Elle produit :
+The tag triggers the CD (about ten minutes). It fails if the tag does not match the version, is
+not on `main`, if a test fails or if a binary does not report the right version. It produces:
 
-- `lightning-lcd-X.Y.Z-x86_64-linux.tar.gz` (binaires, `install.sh`, fichiers d'intégration) ;
-- `lightning`, `lightning-settings` (binaires seuls) et `SHA256SUMS` ;
-- une attestation de provenance par fichier (Sigstore, via GitHub) ;
-- une release en brouillon, dont les notes sont la section du CHANGELOG.
+- `lightning-lcd-X.Y.Z-x86_64-linux.tar.gz` (binaries, `install.sh`, integration files);
+- `lightning`, `lightning-settings` (bare binaries) and `SHA256SUMS`;
+- one build provenance attestation per file (Sigstore, through GitHub);
+- a draft release whose notes are the changelog section.
 
 ```sh
 scripts/release.sh verify
 ```
 
-Relire aussi les notes sur la page du brouillon, et essayer l'archive sur une machine si le
-packaging a changé (`./install.sh --prefix /tmp/essai --no-udev --no-service`).
+Also read the notes on the draft page, and try the archive on a machine if the packaging changed
+(`./install.sh --prefix /tmp/trial --no-udev --no-service`).
 
-## 4. Publier
+## 4. Publish
 
 ```sh
 scripts/release.sh publish
 ```
 
-Ensuite : vérifier la page publique, fermer le jalon éventuel, annoncer.
+Then: check the public page, close the milestone if any, announce.
 
-## Si quelque chose ne va pas
+## If something goes wrong
 
-- **La CD échoue ou le brouillon est mauvais, avant publication** : supprimer le brouillon et
-  l'étiquette (`gh release delete vX.Y.Z --cleanup-tag --yes`, `git tag -d vX.Y.Z`), corriger sur
-  `main`, recommencer à l'étape 2. Rien n'a été rendu public hormis l'étiquette.
-- **Après publication** : on ne remplace jamais une version publiée et on ne déplace jamais son
-  étiquette. Corriger et publier `X.Y.Z+1` ; si la version est dangereuse, la marquer comme telle
-  dans ses notes et la repasser en « pre-release ».
+- **The CD fails or the draft is wrong, before publication**: delete the draft and the tag
+  (`gh release delete vX.Y.Z --cleanup-tag --yes`, `git tag -d vX.Y.Z`), fix on `main`, start
+  again at step 2. Nothing was made public except the tag.
+- **After publication**: a published version is never replaced and its tag is never moved. Fix
+  and publish `X.Y.Z+1`; if the version is dangerous, say so in its notes and switch it back to
+  "pre-release".
 
-## Préversions
+## Pre-releases
 
-Une étiquette `vX.Y.Z-rc.N` (posée à la main, la version du `Cargo.toml` étant déjà `X.Y.Z`)
-produit un brouillon marqué « pre-release », avec les mêmes contrôles. Le lancement manuel du
-workflow *Release* (onglet Actions) construit l'archive sans rien publier : utile pour essayer un
-changement du packaging.
+A `vX.Y.Z-rc.N` tag (created by hand, the `Cargo.toml` version already being `X.Y.Z`) produces a
+draft marked "pre-release", with the same checks. Running the *Release* workflow manually
+(Actions tab) builds the archive without publishing anything: useful to try a packaging change.

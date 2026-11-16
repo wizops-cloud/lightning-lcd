@@ -13,7 +13,7 @@ A GNOME application, **Lightning**, sets everything up without the command line:
 ![Lightning application](docs/screenshots/en/accueil-dark.png)
 
 The protocol (reverse-engineered from the Windows driver and service) is described in
-[docs/PROTOCOL.md](docs/PROTOCOL.md) (in French). The original Python implementation, used as a
+[docs/PROTOCOL.md](docs/PROTOCOL.md). The original Python implementation, used as a
 reference, is kept in [legacy/python/](legacy/python/).
 
 ## Installation
@@ -33,7 +33,7 @@ tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
 Releases are built by `.github/workflows/release.yml` for every `v*` tag, with a build provenance
 attestation (`gh attestation verify <file> --repo wizops-cloud/lightning-lcd`), and created as
 drafts: they are only published after verification. Changes are listed in
-[CHANGELOG.md](CHANGELOG.md); the process is described in [RELEASING.md](RELEASING.md) (French).
+[CHANGELOG.md](CHANGELOG.md); the process is described in [RELEASING.md](RELEASING.md).
 
 ### Fedora (RPM)
 
@@ -368,7 +368,7 @@ behavior on exit).
 | `crates/lightning-i18n` | Translations (PO catalogs compiled in, language from the environment) |
 | `crates/lightning-gtk` | GNOME application `lightning-settings` (GTK 4 + libadwaita) |
 | `packaging/` | udev rule, systemd user service, `.desktop`, icon, configuration example, `install.sh`, RPM package (`rpm/`), Flatpak (`flatpak/`), AppStream |
-| `docs/PROTOCOL.md` | Protocol and reverse-engineering history (French) |
+| `docs/PROTOCOL.md` | Protocol and reverse-engineering history |
 | `legacy/` | Original Python scripts (historical reference) |
 
 ```rust
@@ -397,7 +397,7 @@ Please report the result with the "Retour sur un matériel non testé" issue tem
 
 ## Contributing
 
-Build, tests, commit style and hardware safety rules: [CONTRIBUTING.md](CONTRIBUTING.md) (French).
+Build, tests, commit style and hardware safety rules: [CONTRIBUTING.md](CONTRIBUTING.md).
 Bugs and requests go through the
 [issue templates](https://github.com/wizops-cloud/lightning-lcd/issues/new/choose); report a
 vulnerability privately, see [SECURITY.md](SECURITY.md).
