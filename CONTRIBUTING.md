@@ -76,6 +76,9 @@ avec `scripts/screenshots.sh` (compositeur sans écran, démon de démonstration
 2. Une branche et une PR par sujet, courte de préférence. Remplissez le modèle de PR : ce qui a
    été vérifié, et sur quel matériel le cas échéant.
 3. La PR référence l'issue (`Closes #N`) et passe la CI.
+4. Un changement visible par l'utilisateur ajoute une ligne à la section `[Unreleased]` de
+   [CHANGELOG.md](CHANGELOG.md) (en anglais). La publication des versions est décrite dans
+   [RELEASING.md](RELEASING.md).
 
 ### Style des commits
 

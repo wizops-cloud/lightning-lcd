@@ -30,8 +30,10 @@ tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
 ./install.sh --help     # --prefix, --no-udev, --no-service, --uninstall
 ```
 
-Releases are built by `.github/workflows/release.yml` for every `v*` tag and created as drafts:
-they are only published after a human check.
+Releases are built by `.github/workflows/release.yml` for every `v*` tag, with a build provenance
+attestation (`gh attestation verify <file> --repo wizops-cloud/lightning-lcd`), and created as
+drafts: they are only published after verification. Changes are listed in
+[CHANGELOG.md](CHANGELOG.md); the process is described in [RELEASING.md](RELEASING.md) (French).
 
 ### Fedora (RPM)
 

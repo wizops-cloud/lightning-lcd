@@ -31,8 +31,10 @@ tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
 ./install.sh --help     # --prefix, --no-udev, --no-service, --uninstall
 ```
 
-Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*` et
-créées en brouillon : elles ne sont publiées qu'après vérification humaine.
+Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*`, avec
+une attestation de provenance (`gh attestation verify <fichier> --repo wizops-cloud/lightning-lcd`),
+et créées en brouillon : elles ne sont publiées qu'après vérification. Les changements de chaque
+version sont dans [CHANGELOG.md](CHANGELOG.md), le processus dans [RELEASING.md](RELEASING.md).
 
 ### Fedora (RPM)
 
