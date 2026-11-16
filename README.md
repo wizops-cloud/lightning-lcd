@@ -93,6 +93,7 @@ Prérequis :
 | libusb | `libusb1-devel` | `libusb-1.0-0-dev` |
 | Application de réglage (GTK ≥ 4.14, libadwaita ≥ 1.5) | `gtk4-devel libadwaita-devel` | `libgtk-4-dev libadwaita-1-dev` |
 | Fenêtre d'aperçu | — | `libxkbcommon-dev libwayland-dev libx11-dev libx11-xcb-dev` |
+| Photos HEIC (facultatif, `--features heic`) | `libheif-devel` (+ `libheif-freeworld` ou `libheif-ffmpeg` pour le HEVC) | `libheif-dev libheif-plugin-libde265` |
 | À l'exécution | `ffmpeg` (vidéo), pilote NVIDIA (panneau GPU) | idem |
 
 ```sh
@@ -121,6 +122,10 @@ update-desktop-database ~/.local/share/applications
 ```
 
 Sans l'application de réglage : `cargo build --release -p lightning` suffit, et GTK n'est pas requis.
+
+Photos HEIC des téléphones : `cargo build --release -p lightning --features heic` (libheif ≥ 1.17
+et un décodeur HEVC pour libheif). Sans cette option, le diaporama ignore les fichiers `.heic` /
+`.heif`.
 
 ## Application de réglage
 
@@ -197,7 +202,7 @@ busctl --user introspect cloud.wizops.Lightning.Daemon /cloud/wizops/Lightning
 ## Diaporama
 
 Le mode `slideshow` affiche les photos d'un ou plusieurs dossiers (récursif ; JPEG, PNG, WebP,
-BMP — le HEIC n'est pas décodé) : durée par photo, ordre aléatoire ou chronologique (date de prise
+BMP, et HEIC / HEIF avec la fonctionnalité `heic`) : durée par photo, ordre aléatoire ou chronologique (date de prise
 de vue EXIF, sinon date du fichier), orientation EXIF respectée, photo entière sur fond flou ou
 écran rempli, fondu enchaîné, légende (date et nom du dossier) et petite horloge. La photo suivante
 est décodée à l'avance dans un fil ; les dossiers sont relus toutes les minutes.

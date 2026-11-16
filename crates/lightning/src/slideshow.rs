@@ -134,6 +134,9 @@ pub struct Entry {
 const EXTENSIONS: [&str; 5] = ["jpg", "jpeg", "png", "webp", "bmp"];
 
 fn is_photo(path: &Path) -> bool {
+    if crate::heif::is_heif(path) {
+        return crate::heif::SUPPORTED;
+    }
     path.extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
@@ -251,7 +254,14 @@ pub struct Slide {
 }
 
 /// Décode une photo en respectant son orientation EXIF.
-fn decode(path: &Path) -> image::ImageResult<DynamicImage> {
+fn decode(path: &Path) -> Result<DynamicImage, String> {
+    if crate::heif::is_heif(path) {
+        return crate::heif::decode(path);
+    }
+    decode_common(path).map_err(|e| e.to_string())
+}
+
+fn decode_common(path: &Path) -> image::ImageResult<DynamicImage> {
     let mut decoder = image::ImageReader::open(path)?
         .with_guessed_format()?
         .into_decoder()?;
@@ -637,7 +647,11 @@ impl Slideshow {
         } else {
             (
                 "diaporama : aucune photo trouvée",
-                "formats pris en charge : JPEG, PNG, WebP, BMP",
+                if crate::heif::SUPPORTED {
+                    "formats pris en charge : JPEG, PNG, WebP, BMP, HEIC"
+                } else {
+                    "formats pris en charge : JPEG, PNG, WebP, BMP"
+                },
             )
         };
         let tw = self.painter.measure(title, 40.0);
@@ -744,6 +758,35 @@ mod tests {
         // Le même dossier cité deux fois ne double pas les photos.
         let twice = vec![folders[0].clone(), folders[0].clone()];
         assert_eq!(scan(&twice, false).len(), 2);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn heic_photos_follow_the_cargo_feature() {
+        let dir = tmp("heic");
+        std::fs::write(dir.join("IMG_0001.HEIC"), crate::heif::tests::SAMPLE).unwrap();
+        png(&dir.join("b.png"), 4, 4, [1, 1, 1]);
+        let entries = scan(&[dir.to_string_lossy().into_owned()], true);
+        if !crate::heif::SUPPORTED {
+            assert_eq!(entries.len(), 1, "HEIC ignoré sans la fonctionnalité heic");
+            let _ = std::fs::remove_dir_all(dir);
+            return;
+        }
+        assert_eq!(entries.len(), 2);
+        let heic = &entries[0];
+        assert!(heic.path.ends_with("IMG_0001.HEIC"));
+        // Date de prise de vue lue dans l'EXIF du conteneur HEIF.
+        assert_eq!(
+            heic.date,
+            NaiveDate::from_ymd_opt(2024, 6, 21)
+                .unwrap()
+                .and_hms_opt(18, 30, 0)
+        );
+        let slide = load(heic, SlideFit::Cover, 160, 100).unwrap();
+        assert_eq!(slide.rgba.len(), 160 * 100 * 4);
+        let near = |p: [u8; 3], c: [u8; 3]| p.iter().zip(c).all(|(a, b)| a.abs_diff(b) < 30);
+        assert!(near(pixel(&slide.rgba, 160, 10, 50), [220, 40, 40]));
+        assert!(near(pixel(&slide.rgba, 160, 150, 50), [40, 60, 220]));
         let _ = std::fs::remove_dir_all(dir);
     }
 

@@ -4,6 +4,7 @@ mod config;
 mod ctl;
 mod daemon;
 mod google;
+mod heif;
 mod media;
 mod mjpeg;
 mod mpris;

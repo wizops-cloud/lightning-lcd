@@ -48,8 +48,9 @@ color = "101418"
 
 # Mode "slideshow" : diaporama de photos.
 [slideshow]
-# Dossiers parcourus récursivement (JPEG, PNG, WebP, BMP). Le cache Google Photos
-# (~/.cache/lightning/google-photos) s'y ajoute tout seul après un import.
+# Dossiers parcourus récursivement (JPEG, PNG, WebP, BMP ; HEIC si construit avec la
+# fonctionnalité heic). Le cache Google Photos (~/.cache/lightning/google-photos) s'y
+# ajoute tout seul après un import.
 folders = []
 # Durée d'affichage de chaque photo, en secondes.
 interval_s = 15.0

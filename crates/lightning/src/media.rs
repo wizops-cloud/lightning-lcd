@@ -28,11 +28,17 @@ pub fn solid(rgb: [u8; 3], width: u32, height: u32) -> Vec<u8> {
 
 /// Charge une image et l'ajuste à l'écran ; renvoie des pixels RGBA.
 pub fn load_image(path: &Path, fit: Fit, width: u32, height: u32) -> Result<Vec<u8>> {
-    let img = image::ImageReader::open(path)
-        .with_context(|| format!("ouverture de {}", path.display()))?
-        .with_guessed_format()?
-        .decode()
-        .with_context(|| format!("décodage de {}", path.display()))?;
+    let img = if crate::heif::is_heif(path) {
+        crate::heif::decode(path)
+            .map_err(anyhow::Error::msg)
+            .with_context(|| format!("décodage de {}", path.display()))?
+    } else {
+        image::ImageReader::open(path)
+            .with_context(|| format!("ouverture de {}", path.display()))?
+            .with_guessed_format()?
+            .decode()
+            .with_context(|| format!("décodage de {}", path.display()))?
+    };
     let filter = FilterType::CatmullRom;
     let fitted = match fit {
         Fit::Cover => img.resize_to_fill(width, height, filter).into_rgba8(),
