@@ -32,6 +32,36 @@ tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
 Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*` et
 créées en brouillon : elles ne sont publiées qu'après vérification humaine.
 
+### Fedora (RPM)
+
+`packaging/rpm/lightning-lcd.spec` produit deux paquets : `lightning-lcd` (binaire `lightning`,
+règle udev, service utilisateur `lightning-dashboard.service`) et `lightning-lcd-settings`
+(application « Lightning »). Les dépendances Rust sont embarquées, la construction se fait hors
+ligne.
+
+```sh
+sudo dnf install -y rpm-build cargo-rpm-macros rpmlint libusb1-devel systemd-devel \
+    libX11-devel gtk4-devel libadwaita-devel desktop-file-utils dbus-daemon
+packaging/rpm/build-srpm.sh --rpm          # SRPM + RPM dans target/rpm-dist/
+sudo dnf install target/rpm-dist/x86_64/lightning-lcd-{,settings-}0*.rpm
+systemctl --user enable --now lightning-dashboard.service
+```
+
+**COPR** : construire le SRPM (`packaging/rpm/build-srpm.sh`), puis le soumettre à un projet
+COPR, depuis l'interface web (« New Build » → « Upload ») ou avec `copr-cli` :
+
+```sh
+sudo dnf install -y copr-cli          # jeton API dans ~/.config/copr (copr.fedorainfracloud.org/api)
+copr-cli create lightning-lcd --chroot fedora-43-x86_64 --chroot fedora-44-x86_64 \
+    --description "Écran LCD de la MSI RTX 5090 Lightning Z"
+copr-cli build lightning-lcd target/rpm-dist/lightning-lcd-*.src.rpm
+# Côté utilisateur :
+sudo dnf copr enable <compte>/lightning-lcd && sudo dnf install lightning-lcd lightning-lcd-settings
+```
+
+Pour une nouvelle version : mettre à jour `Version`, `%changelog` et, si `Cargo.lock` a changé,
+la ligne `License` (résumé affiché par `%{cargo_license_summary}` pendant la construction).
+
 ### Depuis les sources
 
 Prérequis :
@@ -273,7 +303,7 @@ adresse HTTP, comportement à l'arrêt).
 | `crates/lightning` | Binaire `lightning` : commandes directes, démon D-Bus, `ctl`, diaporama, sorties `lcd` / `window` / `http` |
 | `crates/lightning-ipc` | Interface D-Bus partagée (noms, proxy zbus) |
 | `crates/lightning-gtk` | Application GNOME `lightning-settings` (GTK 4 + libadwaita) |
-| `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration |
+| `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration, `install.sh`, paquet RPM (`rpm/`) |
 | `docs/PROTOCOL.md` | Protocole et historique de la rétro-ingénierie |
 | `legacy/` | Scripts Python d'origine (référence historique) |
 
