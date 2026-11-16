@@ -1,0 +1,555 @@
+# Traduction anglaise de lightning-lcd (daemon).
+# Texte source : le français du code (tr / trf). Les {paramètres} sont conservés.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "(Spotify, Rhythmbox, Lollypop, navigateur…)"
+msgstr "(Spotify, Rhythmbox, Lollypop, web browser…)"
+
+msgid "--preview-rotation : 0, 90, 180 ou 270"
+msgstr "--preview-rotation: 0, 90, 180 or 270"
+
+msgid "absent"
+msgstr "absent"
+
+msgid "actif"
+msgstr "on"
+
+msgid "adresse"
+msgstr "address"
+
+msgid "adresse « {addr} » invalide (attendu : IP:port)"
+msgstr "invalid address \"{addr}\" (expected: IP:port)"
+
+msgid "ajoutez un dossier de photos dans les réglages"
+msgstr "add a photo folder in the settings"
+
+msgid "ajustement « {value} » inconnu (attendu : cover, contain)"
+msgstr "unknown fit \"{value}\" (expected: cover, contain)"
+
+msgid "allumé depuis {uptime}"
+msgstr "up {uptime}"
+
+msgid "animation MSI"
+msgstr "MSI animation"
+
+msgid "aperçu HTTP"
+msgstr "HTTP preview"
+
+msgid "app {app}, sdk {sdk}, matériel {hardware}"
+msgstr "app {app}, sdk {sdk}, hardware {hardware}"
+
+msgid "arrêté"
+msgstr "stopped"
+
+msgid "au choix"
+msgstr "any"
+
+msgid "aucun fichier de configuration"
+msgstr "no configuration file"
+
+msgid "aucun point de montage"
+msgstr "no mount point"
+
+msgid "aucune image choisie"
+msgstr "no image selected"
+
+msgid "Aucune lecture en cours"
+msgstr "Nothing playing"
+
+msgid "aucune photo n'a pu être téléchargée"
+msgstr "no photo could be downloaded"
+
+msgid "aucune sortie active : ajouter --output window ou --output http avec --no-lcd"
+msgstr "no active output: add --output window or --output http with --no-lcd"
+
+msgid "aucune vidéo choisie"
+msgstr "no video selected"
+
+msgid "autonome (animation interne)"
+msgstr "standalone (built-in animation)"
+
+msgid "autorisation non reçue à temps"
+msgstr "authorization not received in time"
+
+msgid "autorisation refusée ({error})"
+msgstr "authorization denied ({error})"
+
+msgid "Autorisation reçue. Vous pouvez fermer cet onglet et revenir à Lightning."
+msgstr "Authorization received. You can close this tab and return to Lightning."
+
+msgid "Autorisez Lightning dans le navigateur"
+msgstr "Authorize Lightning in the browser"
+
+msgid "brightness : valeur attendue entre 0 et 100"
+msgstr "brightness: value between 0 and 100 expected"
+
+msgid "cache"
+msgstr "cache"
+
+msgid "cadence"
+msgstr "frame rate"
+
+msgid "cadence attendue entre 0,1 et 30 images par seconde"
+msgstr "frame rate must be between 0.1 and 30 frames per second"
+
+msgid "capture écrite : {path}"
+msgstr "screenshot written: {path}"
+
+msgid "Carte graphique"
+msgstr "Graphics card"
+
+msgid "ce binaire a été compilé sans la fenêtre d'aperçu (feature `window`)"
+msgstr "this binary was built without the preview window (feature `window`)"
+
+msgid "charge"
+msgstr "load"
+
+msgid "chemin absolu attendu : {path}"
+msgstr "absolute path expected: {path}"
+
+msgid "chemin non UTF-8 : {path}"
+msgstr "path is not UTF-8: {path}"
+
+msgid "chemin {path}"
+msgstr "path {path}"
+
+msgid "Choisissez vos photos dans Google Photos"
+msgstr "Choose your photos in Google Photos"
+
+msgid "configuration invalide : {path}"
+msgstr "invalid configuration: {path}"
+
+msgid "connecté"
+msgstr "connected"
+
+msgid "connexion au bus de session"
+msgstr "connecting to the session bus"
+
+msgid "Connexion à Google…"
+msgstr "Connecting to Google…"
+
+msgid "connexion…"
+msgstr "connecting…"
+
+msgid "contenu"
+msgstr "content"
+
+msgid "couleur"
+msgstr "color"
+
+msgid "couleur attendue au format RRGGBB"
+msgstr "color expected as RRGGBB"
+
+msgid "coupé"
+msgstr "off"
+
+msgid "CPU 16 cœurs"
+msgstr "16-core CPU"
+
+msgid "création de la session de sélection"
+msgstr "creating the picker session"
+
+msgid "création de {path}"
+msgstr "creating {path}"
+
+msgid "demandée {asked}, firmware {firmware}"
+msgstr "requested {asked}, firmware {firmware}"
+
+msgid "diaporama"
+msgstr "slideshow"
+
+msgid "diaporama : aucun dossier choisi"
+msgstr "slideshow: no folder selected"
+
+msgid "diaporama : aucune photo trouvée"
+msgstr "slideshow: no photo found"
+
+msgid "Disques"
+msgstr "Disks"
+
+msgid "durée par photo attendue entre 1 seconde et 24 heures"
+msgstr "time per photo must be between 1 second and 24 hours"
+
+msgid "décodage de {path}"
+msgstr "decoding {path}"
+
+msgid "démon"
+msgstr "daemon"
+
+msgid "démon arrêté"
+msgstr "daemon stopped"
+
+msgid "démonstration"
+msgstr "demo"
+
+msgid "désactivé"
+msgstr "disabled"
+
+msgid "détail"
+msgstr "detail"
+
+msgid "en boucle"
+msgstr "looped"
+
+msgid "EN COURS DE LECTURE"
+msgstr "NOW PLAYING"
+
+msgid "EN COURS DE LECTURE · {player}"
+msgstr "NOW PLAYING · {player}"
+
+msgid "En pause"
+msgstr "Paused"
+
+msgid "Ensemble Démonstration"
+msgstr "Demo Ensemble"
+
+msgid "erreur : {error}"
+msgstr "error: {error}"
+
+msgid "ffmpeg n'a produit aucune image ({status})"
+msgstr "ffmpeg produced no frame ({status})"
+
+msgid "firmware"
+msgstr "firmware"
+
+msgid "fondu de 5 secondes au maximum"
+msgstr "crossfade of 5 seconds at most"
+
+msgid "formats pris en charge : JPEG, PNG, WebP, BMP"
+msgstr "supported formats: JPEG, PNG, WebP, BMP"
+
+msgid "formats pris en charge : JPEG, PNG, WebP, BMP, HEIC"
+msgstr "supported formats: JPEG, PNG, WebP, BMP, HEIC"
+
+msgid "fps : valeur strictement positive attendue"
+msgstr "fps: strictly positive value expected"
+
+msgid "fréq."
+msgstr "clock"
+
+msgid "horloge"
+msgstr "clock"
+
+msgid "identifiants Google absents : renseignez [google] client_id et client_secret"
+msgstr "missing Google credentials: set [google] client_id and client_secret"
+
+msgid "identifiants Google absents : renseignez [google] client_id et client_secret dans la configuration"
+msgstr "missing Google credentials: set [google] client_id and client_secret in the configuration"
+
+msgid "image"
+msgstr "image"
+
+msgid "image HEIF sans plan RGBA entrelacé"
+msgstr "HEIF image without an interleaved RGBA plane"
+
+msgid "images envoyées"
+msgstr "frames sent"
+
+msgid "import annulé"
+msgstr "import cancelled"
+
+msgid "import démarré : suivre « lightning ctl google status » et ouvrir l'adresse indiquée"
+msgstr "import started: follow \"lightning ctl google status\" and open the address shown"
+
+msgid "inconnue"
+msgstr "unknown"
+
+msgid "installation du gestionnaire de signaux"
+msgstr "installing the signal handler"
+
+msgid "L'autorisation a échoué. Vous pouvez fermer cet onglet et réessayer depuis Lightning."
+msgstr "Authorization failed. You can close this tab and try again from Lightning."
+
+msgid "l'écran est rendu à son firmware"
+msgstr "the screen is handed back to its firmware"
+
+msgid "lancement de ffmpeg (est-il installé ?)"
+msgstr "starting ffmpeg (is it installed?)"
+
+msgid "Lancez un morceau dans un lecteur compatible MPRIS"
+msgstr "Play a track in an MPRIS-compatible player"
+
+msgid "le diaporama n'est pas affiché"
+msgstr "the slideshow is not shown"
+
+msgid "le démon n'a encore diffusé aucune image"
+msgstr "the daemon has not sent any frame yet"
+
+msgid "le démon n'a pas répondu"
+msgstr "the daemon did not answer"
+
+msgid "le démon ne tourne pas (systemctl --user start {unit})"
+msgstr "the daemon is not running (systemctl --user start {unit})"
+
+msgid "le démon s'arrête"
+msgstr "the daemon is stopping"
+
+msgid "le firmware est resté en mode écran étendu"
+msgstr "the firmware stayed in extended display mode"
+
+msgid "Lecteur"
+msgstr "Player"
+
+msgid "lecteur : un nom sans espace est attendu (ex. spotify)"
+msgstr "player: a name without spaces is expected (e.g. spotify)"
+
+msgid "lecture"
+msgstr "now playing"
+
+msgid "En lecture"
+msgstr "Playing"
+
+msgid "lecture de la session de sélection"
+msgstr "reading the picker session"
+
+msgid "lecture de {path}"
+msgstr "reading {path}"
+
+msgid "Lightning : accès à Google Photos"
+msgstr "Lightning: Google Photos access"
+
+msgid "liste des photos choisies"
+msgstr "listing the selected photos"
+
+msgid "liste des photos illisible : {error}"
+msgstr "unreadable photo list: {error}"
+
+msgid "luminosité"
+msgstr "brightness"
+
+msgid "luminosité attendue entre 0 et 100"
+msgstr "brightness must be between 0 and 100"
+
+msgid "Lumière d'automne sur la ville"
+msgstr "Autumn Light over the City"
+
+msgid "mode"
+msgstr "mode"
+
+msgid "mode {mode}"
+msgstr "mode {mode}"
+
+msgid "mode « {mode} » inutilisable : {error}"
+msgstr "mode \"{mode}\" unusable: {error}"
+
+msgid "modèle"
+msgstr "model"
+
+msgid "moy."
+msgstr "avg."
+
+msgid "mém."
+msgstr "mem."
+
+msgid "non"
+msgstr "no"
+
+msgid "numéro série"
+msgstr "serial number"
+
+msgid "NVML indisponible"
+msgstr "NVML unavailable"
+
+msgid "ordre « {value} » inconnu (attendu : random, chronological)"
+msgstr "unknown order \"{value}\" (expected: random, chronological)"
+
+msgid "oui"
+msgstr "yes"
+
+msgid "ouverture de {path}"
+msgstr "opening {path}"
+
+msgid "panneau « {name} » inconnu (attendu : {expected})"
+msgstr "unknown panel \"{name}\" (expected: {expected})"
+
+msgid "panneaux"
+msgstr "panels"
+
+msgid "pas de réponse du firmware"
+msgstr "no answer from the firmware"
+
+msgid "pas de réponse du firmware sur le canal HID"
+msgstr "no answer from the firmware on the HID channel"
+
+msgid "pas de swap"
+msgstr "no swap"
+
+msgid "plan HEIF tronqué"
+msgstr "truncated HEIF plane"
+
+msgid "preview_rotation : 0, 90, 180 ou 270"
+msgstr "preview_rotation: 0, 90, 180 or 270"
+
+msgid "puissance"
+msgstr "power"
+
+msgid "quality : 1 à 100"
+msgstr "quality: 1 to 100"
+
+msgid "reconnexion…"
+msgstr "reconnecting…"
+
+msgid "redirection inattendue (état différent)"
+msgstr "unexpected redirect (state mismatch)"
+
+msgid "redirection sans code d'autorisation"
+msgstr "redirect without an authorization code"
+
+msgid "remplacement de {path}"
+msgstr "replacing {path}"
+
+msgid "renouvellement du jeton"
+msgstr "renewing the token"
+
+msgid "rotation"
+msgstr "rotation"
+
+msgid "rotation : seules 0 et 180 sont prises en charge"
+msgstr "rotation: only 0 and 180 are supported"
+
+msgid "réponse du serveur de jetons illisible : {error}"
+msgstr "unreadable token server response: {error}"
+
+msgid "Réseau"
+msgstr "Network"
+
+msgid "secondes {seconds}, date {date}"
+msgstr "seconds {seconds}, date {date}"
+
+msgid "session de sélection sans adresse"
+msgstr "picker session without an address"
+
+msgid "session illisible : {error}"
+msgstr "unreadable session: {error}"
+
+msgid "sortie de ffmpeg indisponible"
+msgstr "ffmpeg output unavailable"
+
+msgid "suppression de la session"
+msgstr "deleting the session"
+
+msgid "swap {used} / {total}"
+msgstr "swap {used} / {total}"
+
+msgid "sélection non terminée à temps"
+msgstr "selection not finished in time"
+
+msgid "tableau de bord arrêté"
+msgstr "dashboard stopped"
+
+msgid "temp."
+msgstr "temp."
+
+msgid "Titre inconnu"
+msgstr "Unknown title"
+
+msgid "téléchargement d'une photo"
+msgstr "downloading a photo"
+
+msgid "téléchargement interrompu : {error}"
+msgstr "download interrupted: {error}"
+
+msgid "Téléchargement {current} / {total}"
+msgstr "Downloading {current} / {total}"
+
+msgid "un autre démon lightning tient déjà le nom D-Bus {name}"
+msgstr "another lightning daemon already owns the D-Bus name {name}"
+
+msgid "un import est déjà en cours"
+msgstr "an import is already in progress"
+
+msgid "un import est en cours"
+msgstr "an import is in progress"
+
+msgid "une fois"
+msgstr "once"
+
+msgid "valeur « {value} » inconnue (attendu : {expected})"
+msgstr "unknown value \"{value}\" (expected: {expected})"
+
+msgid "ventilo"
+msgstr "fan"
+
+msgid "version {v}"
+msgstr "version {v}"
+
+msgid "versions"
+msgstr "versions"
+
+msgid "vidéo"
+msgstr "video"
+
+msgid "vidéo introuvable : {path}"
+msgstr "video not found: {path}"
+
+msgid "{context} : erreur {code} ({detail})"
+msgstr "{context}: error {code} ({detail})"
+
+msgid "{count} photos dans {dir}"
+msgstr "{count} photos in {dir}"
+
+msgid "{folders} dossier(s), {photos} photos, {interval} s par photo, ordre {order}"
+msgstr "{folders} folder(s), {photos} photos, {interval} s per photo, order {order}"
+
+msgid "{fps} img/s (mesurée {measured}), rendu {render} ms"
+msgstr "{fps} fps (measured {measured}), render {render} ms"
+
+msgid "{n} octets"
+msgstr "{n} bytes"
+
+msgid "{n} photos importées"
+msgstr "{n} photos imported"
+
+msgid "{size} utilisés"
+msgstr "{size} used"
+
+msgid "{title} (lecteur {player})"
+msgstr "{title} (player {player})"
+
+msgid "à l'arrêt"
+msgstr "on exit"
+
+msgid "échange du code d'autorisation"
+msgstr "exchanging the authorization code"
+
+msgid "écoute locale : {error}"
+msgstr "local listener: {error}"
+
+msgid "écran"
+msgstr "screen"
+
+msgid "écran : image non affichée (délai dépassé ou arrêt demandé)"
+msgstr "screen: frame not shown (timeout or stop requested)"
+
+msgid "écran : {error}"
+msgstr "screen: {error}"
+
+msgid "Écran de démonstration"
+msgstr "Demo Screen"
+
+msgid "écran rendu au firmware (animation MSI)"
+msgstr "screen handed back to the firmware (MSI animation)"
+
+msgid "écran rendu au firmware (mode autonome)"
+msgstr "screen handed back to the firmware (standalone mode)"
+
+msgid "écran étendu (affiche le flux USB)"
+msgstr "extended display (shows the USB stream)"
+
+msgid "écriture de {path}"
+msgstr "writing {path}"
+
+msgid "élément {id} sans adresse de téléchargement"
+msgstr "item {id} has no download address"
+
+msgid "état"
+msgstr "state"
+
+msgid "↑ émis"
+msgstr "↑ sent"
+
+msgid "↓ reçu"
+msgstr "↓ received"

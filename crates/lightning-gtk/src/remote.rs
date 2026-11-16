@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use lightning_i18n::tr;
 use lightning_ipc::{INTERFACE, LightningProxy, SYSTEMD_UNIT};
 use zbus::zvariant::OwnedValue;
 use zbus::{Connection, Proxy};
@@ -105,13 +106,13 @@ impl DaemonState {
     /// Libellé français de l'état de l'import Google Photos.
     pub fn google_label(&self) -> String {
         let base = match self.google_state.as_str() {
-            "unconfigured" => "Identifiants OAuth à renseigner",
-            "idle" => "Prêt",
-            "awaiting_auth" => "En attente de votre autorisation dans le navigateur",
-            "awaiting_selection" => "En attente de votre sélection dans Google Photos",
-            "downloading" => "Téléchargement",
-            "error" => "Échec",
-            _ => "Inconnu",
+            "unconfigured" => tr("Identifiants OAuth à renseigner"),
+            "idle" => tr("Prêt"),
+            "awaiting_auth" => tr("En attente de votre autorisation dans le navigateur"),
+            "awaiting_selection" => tr("En attente de votre sélection dans Google Photos"),
+            "downloading" => tr("Téléchargement"),
+            "error" => tr("Échec"),
+            _ => tr("Inconnu"),
         };
         match (self.google_state.as_str(), self.google_detail.is_empty()) {
             ("idle" | "error" | "downloading", false) => format!("{base} — {}", self.google_detail),
@@ -129,13 +130,13 @@ impl DaemonState {
     /// Libellé français de l'état de l'écran.
     pub fn lcd_label(&self) -> &'static str {
         match self.lcd_state.as_str() {
-            "connected" => "Connecté",
-            "connecting" => "Connexion en cours…",
-            "reconnecting" => "Reconnexion en cours…",
-            "absent" => "Introuvable",
-            "disabled" if self.mode == "msi_animation" => "Rendu au firmware",
-            "disabled" => "Désactivé",
-            _ => "Inconnu",
+            "connected" => tr("Connecté"),
+            "connecting" => tr("Connexion en cours…"),
+            "reconnecting" => tr("Reconnexion en cours…"),
+            "absent" => tr("Introuvable"),
+            "disabled" if self.mode == "msi_animation" => tr("Rendu au firmware"),
+            "disabled" => tr("Désactivé"),
+            _ => tr("Inconnu"),
         }
     }
 }
@@ -168,13 +169,13 @@ impl ServiceState {
     /// Libellé français de l'état d'activité.
     pub fn active_label(&self) -> &'static str {
         match self.active.as_str() {
-            "active" => "En cours d'exécution",
-            "activating" => "Démarrage…",
-            "deactivating" => "Arrêt…",
-            "failed" => "En échec",
-            "inactive" => "Arrêté",
-            _ if !self.is_installed() => "Non installé",
-            _ => "Inconnu",
+            "active" => tr("En cours d'exécution"),
+            "activating" => tr("Démarrage…"),
+            "deactivating" => tr("Arrêt…"),
+            "failed" => tr("En échec"),
+            "inactive" => tr("Arrêté"),
+            _ if !self.is_installed() => tr("Non installé"),
+            _ => tr("Inconnu"),
         }
     }
 }

@@ -1,0 +1,9 @@
+[package]
+name = "lightning-i18n"
+description = "Traductions de lightning-lcd (catalogue PO embarqué, langue selon l'environnement)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]

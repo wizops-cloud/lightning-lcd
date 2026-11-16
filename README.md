@@ -1,74 +1,74 @@
 # lightning-lcd
 
-Application Linux pour l'écran LCD intégré de la **MSI RTX 5090 Lightning Z**
-(« V530-9.6 Lightning », USB `0db0:7881`, 1280×800). Elle remplace l'appli Windows
-MSI Lightning Hub : couleur, image, vidéo, flux, et surtout un **tableau de bord de
-l'état du PC** affiché en continu.
+*English · [Français](README.fr.md)*
 
-![Tableau de bord](docs/dashboard.png)
+Linux application for the built-in LCD screen of the **MSI RTX 5090 Lightning Z**
+("V530-9.6 Lightning", USB `0db0:7881`, 1280×800). It replaces the Windows MSI Lightning Hub
+app: color, image, video, stream, and above all a **live PC status dashboard**.
 
-Une application GNOME, **Lightning**, règle le tout sans ligne de commande :
+![Dashboard](docs/en/dashboard.png)
 
-![Application Lightning](docs/screenshots/accueil-sombre.png)
+A GNOME application, **Lightning**, sets everything up without the command line:
 
-Le protocole (rétro-ingénierie du pilote et du service Windows) est décrit dans
-[docs/PROTOCOL.md](docs/PROTOCOL.md). L'implémentation Python d'origine, qui a servi de
-référence, est conservée dans [legacy/python/](legacy/python/).
+![Lightning application](docs/screenshots/en/accueil-dark.png)
+
+The protocol (reverse-engineered from the Windows driver and service) is described in
+[docs/PROTOCOL.md](docs/PROTOCOL.md) (in French). The original Python implementation, used as a
+reference, is kept in [legacy/python/](legacy/python/).
 
 ## Installation
 
-### Binaires précompilés
+### Prebuilt binaries
 
-Chaque version publiée sur la page [Releases](https://github.com/wizops-cloud/lightning-lcd/releases)
-fournit une archive x86_64 (glibc ≥ 2.39, GTK ≥ 4.14, libadwaita ≥ 1.5) et ses sommes SHA-256 :
+Each version published on the [Releases](https://github.com/wizops-cloud/lightning-lcd/releases)
+page provides an x86_64 archive (glibc ≥ 2.39, GTK ≥ 4.14, libadwaita ≥ 1.5) and its SHA-256 sums:
 
 ```sh
 sha256sum -c SHA256SUMS --ignore-missing
 tar xf lightning-lcd-*-x86_64-linux.tar.gz && cd lightning-lcd-*-x86_64-linux
-./install.sh            # ~/.local/bin, application, service utilisateur, règle udev (sudo)
+./install.sh            # ~/.local/bin, application, user service, udev rule (sudo)
 ./install.sh --help     # --prefix, --no-udev, --no-service, --uninstall
 ```
 
-Les releases sont construites par `.github/workflows/release.yml` à chaque étiquette `v*` et
-créées en brouillon : elles ne sont publiées qu'après vérification humaine.
+Releases are built by `.github/workflows/release.yml` for every `v*` tag and created as drafts:
+they are only published after a human check.
 
 ### Fedora (RPM)
 
-`packaging/rpm/lightning-lcd.spec` produit deux paquets : `lightning-lcd` (binaire `lightning`,
-règle udev, service utilisateur `lightning-dashboard.service`) et `lightning-lcd-settings`
-(application « Lightning »). Les dépendances Rust sont embarquées, la construction se fait hors
-ligne.
+`packaging/rpm/lightning-lcd.spec` builds two packages: `lightning-lcd` (`lightning` binary, udev
+rule, `lightning-dashboard.service` user service) and `lightning-lcd-settings` (the "Lightning"
+application). Rust dependencies are vendored; the build runs offline.
 
 ```sh
 sudo dnf install -y rpm-build cargo-rpm-macros rpmlint libusb1-devel systemd-devel \
     libX11-devel gtk4-devel libadwaita-devel desktop-file-utils dbus-daemon
-packaging/rpm/build-srpm.sh --rpm          # SRPM + RPM dans target/rpm-dist/
+packaging/rpm/build-srpm.sh --rpm          # SRPM + RPM in target/rpm-dist/
 sudo dnf install target/rpm-dist/x86_64/lightning-lcd-{,settings-}0*.rpm
 systemctl --user enable --now lightning-dashboard.service
 ```
 
-**COPR** : construire le SRPM (`packaging/rpm/build-srpm.sh`), puis le soumettre à un projet
-COPR, depuis l'interface web (« New Build » → « Upload ») ou avec `copr-cli` :
+**COPR**: build the SRPM (`packaging/rpm/build-srpm.sh`), then submit it to a COPR project, from
+the web interface ("New Build" → "Upload") or with `copr-cli`:
 
 ```sh
-sudo dnf install -y copr-cli          # jeton API dans ~/.config/copr (copr.fedorainfracloud.org/api)
+sudo dnf install -y copr-cli          # API token in ~/.config/copr (copr.fedorainfracloud.org/api)
 copr-cli create lightning-lcd --chroot fedora-43-x86_64 --chroot fedora-44-x86_64 \
-    --description "Écran LCD de la MSI RTX 5090 Lightning Z"
+    --description "LCD screen of the MSI RTX 5090 Lightning Z"
 copr-cli build lightning-lcd target/rpm-dist/lightning-lcd-*.src.rpm
-# Côté utilisateur :
-sudo dnf copr enable <compte>/lightning-lcd && sudo dnf install lightning-lcd lightning-lcd-settings
+# On the user side:
+sudo dnf copr enable <account>/lightning-lcd && sudo dnf install lightning-lcd lightning-lcd-settings
 ```
 
-Pour une nouvelle version : mettre à jour `Version`, `%changelog` et, si `Cargo.lock` a changé,
-la ligne `License` (résumé affiché par `%{cargo_license_summary}` pendant la construction).
+For a new version: update `Version`, `%changelog` and, if `Cargo.lock` changed, the `License`
+line (summary printed by `%{cargo_license_summary}` during the build).
 
-### Flatpak (application seule)
+### Flatpak (application only)
 
-`packaging/flatpak/cloud.wizops.Lightning.yml` empaquette l'application « Lightning » (runtime
-GNOME 51). Le démon, qui accède à l'écran en USB, reste installé sur le système (RPM, archive ou
-sources) : l'application lui parle sur le bus de session (`cloud.wizops.Lightning.Daemon`) et
-pilote le service par `org.freedesktop.systemd1`. Elle lit le dossier personnel en lecture seule
-(couvertures du diaporama, vrais chemins renvoyés par le sélecteur de fichiers).
+`packaging/flatpak/cloud.wizops.Lightning.yml` packages the "Lightning" application (GNOME 51
+runtime). The daemon, which talks to the screen over USB, stays installed on the system (RPM,
+archive or sources): the application talks to it on the session bus
+(`cloud.wizops.Lightning.Daemon`) and drives the service through `org.freedesktop.systemd1`. It
+reads the home folder read-only (slideshow covers, real paths returned by the file chooser).
 
 ```sh
 sudo dnf install -y flatpak-builder
@@ -78,42 +78,42 @@ flatpak-builder --user --install-deps-from=flathub --install --force-clean \
 flatpak run cloud.wizops.Lightning
 ```
 
-Les métadonnées AppStream sont dans `packaging/cloud.wizops.Lightning.metainfo.xml`
-(`appstreamcli validate --no-net` ; les URL des captures ne répondent que si le dépôt est public).
-Quand `Cargo.lock` change, régénérer `packaging/flatpak/cargo-sources.json` avec
+AppStream metadata lives in `packaging/cloud.wizops.Lightning.metainfo.xml`
+(`appstreamcli validate --no-net`; screenshot URLs only answer once the repository is public).
+When `Cargo.lock` changes, regenerate `packaging/flatpak/cargo-sources.json` with
 `flatpak-cargo-generator.py` ([flatpak-builder-tools](https://github.com/flatpak/flatpak-builder-tools)).
 
-### Depuis les sources
+### From source
 
-Prérequis :
+Requirements:
 
 | | Fedora | Debian / Ubuntu |
 |---|---|---|
-| Rust stable (édition 2024) | `rustup` | `rustup` |
+| Rust stable (2024 edition) | `rustup` | `rustup` |
 | libusb | `libusb1-devel` | `libusb-1.0-0-dev` |
-| Application de réglage (GTK ≥ 4.14, libadwaita ≥ 1.5) | `gtk4-devel libadwaita-devel` | `libgtk-4-dev libadwaita-1-dev` |
-| Fenêtre d'aperçu | — | `libxkbcommon-dev libwayland-dev libx11-dev libx11-xcb-dev` |
-| Photos HEIC (facultatif, `--features heic`) | `libheif-devel` (+ `libheif-freeworld` ou `libheif-ffmpeg` pour le HEVC) | `libheif-dev libheif-plugin-libde265` |
-| À l'exécution | `ffmpeg` (vidéo), pilote NVIDIA (panneau GPU) | idem |
+| Settings application (GTK ≥ 4.14, libadwaita ≥ 1.5) | `gtk4-devel libadwaita-devel` | `libgtk-4-dev libadwaita-1-dev` |
+| Preview window | — | `libxkbcommon-dev libwayland-dev libx11-dev libx11-xcb-dev` |
+| HEIC photos (optional, `--features heic`) | `libheif-devel` (+ `libheif-freeworld` or `libheif-ffmpeg` for HEVC) | `libheif-dev libheif-plugin-libde265` |
+| At runtime | `ffmpeg` (video), NVIDIA driver (GPU panel) | same |
 
 ```sh
 sudo dnf install -y libusb1-devel gtk4-devel libadwaita-devel ffmpeg
 cargo build --release
 
-# Binaires
+# Binaries
 install -Dm755 target/release/lightning ~/.local/bin/lightning
 install -Dm755 target/release/lightning-settings ~/.local/bin/lightning-settings
 
-# Accès à l'écran sans root (USB + hidraw de 0db0:7881 uniquement)
+# Screen access without root (USB + hidraw of 0db0:7881 only)
 sudo install -m644 packaging/70-msi-lightning-lcd.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger --attr-match=idVendor=0db0 --attr-match=idProduct=7881
 
-# Service utilisateur (démon pilotable)
+# User service (controllable daemon)
 install -Dm644 packaging/lightning-dashboard.service ~/.config/systemd/user/lightning-dashboard.service
 systemctl --user daemon-reload
 systemctl --user enable --now lightning-dashboard.service
 
-# Application dans le menu GNOME
+# Application in the GNOME menu
 install -Dm644 packaging/cloud.wizops.Lightning.desktop ~/.local/share/applications/cloud.wizops.Lightning.desktop
 install -Dm644 packaging/icons/cloud.wizops.Lightning.svg ~/.local/share/icons/hicolor/scalable/apps/cloud.wizops.Lightning.svg
 install -Dm644 packaging/icons/cloud.wizops.Lightning-symbolic.svg ~/.local/share/icons/hicolor/symbolic/apps/cloud.wizops.Lightning-symbolic.svg
@@ -121,75 +121,87 @@ gtk4-update-icon-cache -q -t -f ~/.local/share/icons/hicolor
 update-desktop-database ~/.local/share/applications
 ```
 
-Sans l'application de réglage : `cargo build --release -p lightning` suffit, et GTK n'est pas requis.
+Without the settings application, `cargo build --release -p lightning` is enough and GTK is not
+needed.
 
-Photos HEIC des téléphones : `cargo build --release -p lightning --features heic` (libheif ≥ 1.17
-et un décodeur HEVC pour libheif). Sans cette option, le diaporama ignore les fichiers `.heic` /
-`.heif`.
+HEIC phone photos: `cargo build --release -p lightning --features heic` (libheif ≥ 1.17 and an
+HEVC decoder for libheif). Without this option, the slideshow skips `.heic` / `.heif` files.
 
-## Application de réglage
+## Language
 
-Lancer « Lightning » depuis le menu GNOME, ou `lightning-settings`. L'application ne touche pas
-au matériel : elle pilote le démon par D-Bus et le service par l'API D-Bus de systemd.
+The application, the `lightning ctl` messages and the texts drawn on the screen follow the session
+language (`LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`): French for `fr_*` (and when no language is
+set, e.g. `C`), English otherwise. To force one: `LANG=en_US.UTF-8 lightning-settings`; for the
+daemon, set `Environment=LANG=…` in the user service.
 
-| Page | Contenu |
+Translations are PO files compiled into the binaries (`crates/lightning-i18n/po/`): nothing to
+install in `/usr/share/locale`, no system dependency. The French source text is the key; a missing
+translation falls back to French, and a test fails if a marked text has no English entry.
+
+## Settings application
+
+Start "Lightning" from the GNOME menu, or run `lightning-settings`. The application never touches
+the hardware: it drives the daemon over D-Bus and the service through the systemd D-Bus API.
+
+| Page | Contents |
 |---|---|
-| Accueil | grand aperçu en direct de l'écran, pastilles d'état (liaison, contenu, cadence, temps de rendu, luminosité), cartes de contenu, luminosité |
-| Contenu | cartes illustrées (tableau de bord, image, vidéo, diaporama, horloge, lecture en cours, couleur, animation d'origine) et options du contenu choisi |
-| Diaporama | tuiles des dossiers avec couverture et nombre de photos, import Google Photos, réglages de lecture |
-| Tableau de bord | panneaux affichés, ordre (glisser-déposer ou boutons monter/descendre) et schéma de la disposition |
-| Réglages | luminosité, orientation, cadence, comportement à l'arrêt, aperçu HTTP |
-| Service | état, marche/arrêt, redémarrage, lancement à l'ouverture de session |
+| Home | large live preview of the screen, status chips (link, content, frame rate, render time, brightness), content cards, brightness |
+| Content | illustrated cards (dashboard, image, video, slideshow, clock, now playing, color, original animation) and options of the selected content |
+| Slideshow | folder tiles with cover and photo count, Google Photos import, playback settings |
+| Dashboard | shown panels, order (drag and drop or up/down buttons) and layout diagram |
+| Settings | brightness, orientation, frame rate, behavior on exit, HTTP preview |
+| Service | status, start/stop, restart, start at login |
 
-- Interface sombre par défaut, qui suit le thème clair du système ; navigation latérale qui se
-  replie en une colonne quand la fenêtre est étroite.
-- L'aperçu est décodé hors du fil de l'interface, deux fois par seconde au plus, et mis en pause
-  quand la fenêtre est masquée.
-- Si le service est arrêté, un écran d'état propose de le démarrer.
-- Menu principal : « À propos » (F1), « Quitter » (Ctrl+Q).
+- Dark interface by default, following the system light style; the sidebar collapses into a
+  single column when the window is narrow.
+- The preview is decoded off the UI thread, at most twice per second, and paused while the
+  window is hidden.
+- If the service is stopped, a status page offers to start it.
+- Main menu: "About" (F1), "Quit" (Ctrl+Q).
 
-| Sombre | Clair | Étroit |
+| Dark | Light | Narrow |
 |---|---|---|
-| ![](docs/screenshots/contenu-sombre.png) | ![](docs/screenshots/contenu-clair.png) | ![](docs/screenshots/accueil-etroit.png) |
+| ![](docs/screenshots/en/contenu-dark.png) | ![](docs/screenshots/en/contenu-light.png) | ![](docs/screenshots/en/accueil-narrow.png) |
 
-Toutes les captures : [docs/screenshots/](docs/screenshots/). Elles se régénèrent avec
-`scripts/screenshots.sh` (avec `docs/dashboard.png`) : démon `--no-lcd --demo` et faux
-gestionnaire systemd sur un bus D-Bus privé, compositeur `mutter --headless`, photos de
-démonstration dessinées à la volée. Ni l'écran ni le service réel ne sont touchés. Il faut
-`mutter`, ImageMagick (`magick`) et `python3-gobject` en plus des dépendances de construction.
+All screenshots: [docs/screenshots/en/](docs/screenshots/en/) (English) and
+[docs/screenshots/](docs/screenshots/) (French). They are regenerated by `scripts/screenshots.sh`
+(along with `docs/dashboard.png` and `docs/en/`): a `--no-lcd --demo` daemon and a fake systemd
+manager on a private D-Bus bus, a `mutter --headless` compositor, demo photos drawn on the fly.
+Neither the screen nor the real service is touched. It needs `mutter`, ImageMagick (`magick`) and
+`python3-gobject` on top of the build dependencies.
 
-## Démon, D-Bus et `lightning ctl`
+## Daemon, D-Bus and `lightning ctl`
 
-Le service lance `lightning daemon` : une boucle d'affichage dont tous les réglages se changent à
-chaud et sont enregistrés dans `~/.config/lightning/config.toml`.
+The service runs `lightning daemon`: a display loop whose settings can all be changed live and are
+saved to `~/.config/lightning/config.toml`.
 
 ```sh
 lightning ctl status
 lightning ctl mode dashboard|image|video|slideshow|clock|now_playing|color|msi_animation
 lightning ctl image photo.jpg --fit contain
-lightning ctl video film.mp4 [--once]
+lightning ctl video movie.mp4 [--once]
 lightning ctl color ff8800
-lightning ctl slideshow ~/Images --interval 20 --order chronological
-lightning ctl next                       # photo suivante
-lightning ctl clock [--seconds] [--no-date]          # horloge plein écran
-lightning ctl now-playing [--player spotify]         # morceau en cours (MPRIS)
-lightning ctl brightness 60              # appliquée en quelques secondes
+lightning ctl slideshow ~/Pictures --interval 20 --order chronological
+lightning ctl next                       # next photo
+lightning ctl clock [--seconds] [--no-date]          # full-screen clock
+lightning ctl now-playing [--player spotify]         # current track (MPRIS)
+lightning ctl brightness 60              # applied within a few seconds
 lightning ctl fps 1 ; lightning ctl rotation 180 ; lightning ctl widgets cpu,gpu,network
 lightning ctl on-exit blank ; lightning ctl http on --addr 127.0.0.1:7881
-lightning ctl restore                    # rend l'écran à l'animation MSI
-lightning ctl frame apercu.jpg           # dernière image diffusée
+lightning ctl restore                    # gives the screen back to the MSI animation
+lightning ctl frame preview.jpg          # last frame sent
 lightning ctl google status|start|cancel|clear
 ```
 
-Interface D-Bus (bus de session) : nom `cloud.wizops.Lightning.Daemon`, objet
+D-Bus interface (session bus): name `cloud.wizops.Lightning.Daemon`, object
 `/cloud/wizops/Lightning`, interface `cloud.wizops.Lightning1`.
 
-- **Méthodes** : `SetMode`, `ShowImage`, `PlayVideo`, `ShowColor`, `Restore`, `SetBrightness`,
+- **Methods**: `SetMode`, `ShowImage`, `PlayVideo`, `ShowColor`, `Restore`, `SetBrightness`,
   `SetFps`, `SetRotation`, `SetWidgets`, `SetOnExit`, `SetHttp`, `SetSlideshow`, `SlideshowNext`,
   `SetClock`, `SetNowPlaying`,
   `SetGoogleCredentials`, `GooglePhotosStart`, `GooglePhotosCancel`, `GooglePhotosClearCache`,
   `GetFrameJpeg`, `SaveConfig`, `ReloadConfig`.
-- **Propriétés** (lecture seule, avec `PropertiesChanged`) : `LcdState`, `LcdDetail`, `Mode`,
+- **Properties** (read-only, with `PropertiesChanged`): `LcdState`, `LcdDetail`, `Mode`,
   `Brightness`, `FirmwareBrightness`, `Fps`, `Rotation`, `Widgets`, `AvailableWidgets`, `OnExit`,
   `HttpEnabled`, `HttpAddr`, `ImagePath`, `ImageFit`, `VideoPath`, `VideoLoop`, `Color`,
   `MeasuredFps`, `RenderMs`, `FramesSent`, `Slideshow*`, `ClockSeconds`, `ClockDate`,
@@ -199,32 +211,31 @@ Interface D-Bus (bus de session) : nom `cloud.wizops.Lightning.Daemon`, objet
 busctl --user introspect cloud.wizops.Lightning.Daemon /cloud/wizops/Lightning
 ```
 
-## Diaporama
+## Slideshow
 
-Le mode `slideshow` affiche les photos d'un ou plusieurs dossiers (récursif ; JPEG, PNG, WebP,
-BMP, et HEIC / HEIF avec la fonctionnalité `heic`) : durée par photo, ordre aléatoire ou chronologique (date de prise
-de vue EXIF, sinon date du fichier), orientation EXIF respectée, photo entière sur fond flou ou
-écran rempli, fondu enchaîné, légende (date et nom du dossier) et petite horloge. La photo suivante
-est décodée à l'avance dans un fil ; les dossiers sont relus toutes les minutes.
+The `slideshow` mode shows the photos of one or more folders (recursive; JPEG, PNG, WebP, BMP,
+and HEIC / HEIF with the `heic` feature): duration per photo, random or chronological order (EXIF
+capture date, otherwise file date), EXIF orientation honored, whole photo on a blurred background
+or filled screen, crossfade, caption (date and folder name) and a small clock. The next photo is
+decoded ahead of time in a thread; folders are rescanned every minute.
 
-### Photos Google
+### Google Photos
 
-Depuis le 31 mars 2025, la Library API de Google Photos ne donne plus accès à la bibliothèque
-(portées `photoslibrary*` supprimées). La voie officielle est la **Picker API** : vous choisissez
-les photos dans l'interface de Google, l'application ne voit que celles-là. Elles sont copiées dans
-`~/.cache/lightning/google-photos/`, qui devient un dossier du diaporama. Rien n'est envoyé ailleurs
-que chez Google.
+Since March 31, 2025, the Google Photos Library API no longer gives access to the library
+(`photoslibrary*` scopes removed). The official way is the **Picker API**: you pick the photos in
+Google's interface and the application only sees those. They are copied to
+`~/.cache/lightning/google-photos/`, which becomes a slideshow folder. Nothing is sent anywhere but
+to Google.
 
-Il faut créer une fois votre propre client OAuth :
+You need to create your own OAuth client once:
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → créer un projet.
-2. « API et services » → « Bibliothèque » → activer **Google Photos Picker API**.
-3. « Écran de consentement OAuth » : type *Externe*, renseigner le nom de l'application et votre
-   adresse, puis vous ajouter comme *utilisateur test* (l'application peut rester en mode test).
-4. « Identifiants » → « Créer des identifiants » → « ID client OAuth » → type **Application de
-   bureau**. Noter l'identifiant client et le secret.
-5. Dans l'application : page Diaporama → Google Photos → « Identifiants OAuth », ou dans
-   `config.toml` :
+1. [Google Cloud Console](https://console.cloud.google.com/) → create a project.
+2. "APIs & Services" → "Library" → enable **Google Photos Picker API**.
+3. "OAuth consent screen": type *External*, fill in the application name and your address, then
+   add yourself as a *test user* (the application can stay in testing mode).
+4. "Credentials" → "Create credentials" → "OAuth client ID" → type **Desktop app**. Note the
+   client ID and secret.
+5. In the application: Slideshow page → Google Photos → "OAuth credentials", or in `config.toml`:
 
    ```toml
    [google]
@@ -232,147 +243,143 @@ Il faut créer une fois votre propre client OAuth :
    client_secret = "…"
    ```
 
-6. « Choisir des photos Google… » : le navigateur s'ouvre pour l'autorisation (une seule fois),
-   puis sur le sélecteur de Google Photos. Une fois la sélection validée, les photos sont
-   téléchargées et le diaporama les prend en compte.
+6. "Choose Google photos…": the browser opens for the authorization (only once), then on the Google
+   Photos picker. Once the selection is confirmed, the photos are downloaded and the slideshow
+   picks them up.
 
-Le jeton de rafraîchissement est rangé dans le trousseau de la session (Secret Service : GNOME
-Trousseau, KeePassXC…), élément « Lightning : accès à Google Photos ». Sans trousseau joignable
-ou s'il est verrouillé (service lancé hors session graphique), il reste dans
-`~/.config/lightning/google.json` (mode 0600) ; un ancien fichier est déplacé dans le trousseau dès
-qu'il répond. Le jeton n'apparaît jamais dans les journaux.
-« Vider le cache » supprime les photos importées.
+The refresh token is stored in the session keyring (Secret Service: GNOME Keyring, KeePassXC…),
+item "Lightning : accès à Google Photos". When no keyring is reachable or it is locked (service
+started outside a graphical session), it stays in `~/.config/lightning/google.json` (mode 0600); an
+old file is moved into the keyring as soon as it answers. The token never appears in the logs.
+"Clear cache" deletes the imported photos.
 
-## Horloge et lecture en cours
+## Clock and now playing
 
-- **Horloge** (`clock`) : l'heure en très grand, lisible de loin, avec la date en toutes lettres ;
-  secondes facultatives.
-- **En cours de lecture** (`now_playing`) : titre, artiste, album, pochette et progression du
-  morceau joué par un lecteur compatible MPRIS (Spotify, Rhythmbox, Lollypop, navigateurs…). Le
-  démon interroge le bus de session une fois par seconde ; il choisit le lecteur qui joue, sinon
-  celui en pause, ou le lecteur préféré (`[now_playing] player = "spotify"`). La pochette est lue
-  sur le disque ou téléchargée depuis l'adresse fournie par le lecteur.
+- **Clock** (`clock`): the time in very large digits, readable from afar, with the full date;
+  seconds are optional.
+- **Now playing** (`now_playing`): title, artist, album, cover and progress of the track played by
+  an MPRIS-compatible player (Spotify, Rhythmbox, Lollypop, browsers…). The daemon polls the session
+  bus once per second; it picks the player that is playing, otherwise the paused one, or the
+  preferred player (`[now_playing] player = "spotify"`). The cover is read from disk or downloaded
+  from the address given by the player.
 
-| Horloge | En cours de lecture |
+| Clock | Now playing |
 |---|---|
-| ![](docs/clock.png) | ![](docs/now-playing.png) |
+| ![](docs/en/clock.png) | ![](docs/en/now-playing.png) |
 
-## Usage en ligne de commande
+## Command line
 
-Les commandes directes pilotent l'écran sans démon (arrêter le service avant : un seul processus
-à la fois).
+Direct commands drive the screen without the daemon (stop the service first: one process at a
+time).
 
 ```sh
-lightning status                 # état du firmware (mode, luminosité, versions)
-lightning dashboard              # tableau de bord en continu (Ctrl-C pour arrêter)
-lightning dashboard --png f.png  # une capture du tableau de bord, sans toucher à l'écran
-lightning --demo dashboard --png f.png   # idem avec des données factices (captures de la documentation)
-lightning color ff8800           # couleur unie
+lightning status                 # firmware status (mode, brightness, versions)
+lightning dashboard              # live dashboard (Ctrl-C to stop)
+lightning dashboard --png f.png  # one dashboard capture, without touching the screen
+lightning --demo dashboard --png f.png   # same with fake data (documentation screenshots)
+lightning color ff8800           # solid color
 lightning image photo.jpg [--fit cover|contain|stretch]
-lightning video film.mp4 [--fps 30] [--loop]
+lightning video movie.mp4 [--fps 30] [--loop]
 ffmpeg … -c:v mjpeg -huffman default -f mjpeg - | lightning stream
-lightning brightness 80          # luminosité 0-100
-lightning restore                # rend l'écran au firmware (animation MSI)
+lightning brightness 80          # brightness 0-100
+lightning restore                # gives the screen back to the firmware (MSI animation)
 ```
 
-Le premier appel peut prendre 4 à 10 s : le firmware ne lit son canal de commande
-qu'une fois toutes les ~4 s. `-v` / `-vv` détaillent ce qui se passe.
+The first call can take 4 to 10 s: the firmware only reads its command channel about every 4 s.
+`-v` / `-vv` show what is going on. Command-line help (`--help`) is in French.
 
-### Aperçu déporté (fenêtre et navigateur)
+### Remote preview (window and browser)
 
-Chaque image produite peut partir vers plusieurs sorties à la fois avec `--output`
-(`lcd` par défaut) :
+Each frame can go to several outputs at once with `--output` (`lcd` by default):
 
 ```sh
-lightning --output lcd,window dashboard        # l'écran + une fenêtre d'aperçu sur le bureau
-lightning --output lcd,http dashboard          # l'écran + http://127.0.0.1:7881/
-lightning --no-lcd --output window dashboard   # développer sans toucher à l'écran
-lightning --output lcd,window,http video film.mp4
+lightning --output lcd,window dashboard        # the screen + a preview window on the desktop
+lightning --output lcd,http dashboard          # the screen + http://127.0.0.1:7881/
+lightning --no-lcd --output window dashboard   # develop without touching the screen
+lightning --output lcd,window,http video movie.mp4
 ```
 
-- **`window`** : fenêtre native (Wayland ou X11), image à l'échelle, proportions conservées.
-  Un bandeau de debug indique la cadence réelle, les temps de rendu et d'encodage, la taille du
-  JPEG et l'état de l'écran (connecté, reconnexion, absent…). Touches : `O` bandeau, `R` rotation
-  de l'aperçu (0/90/180/270°), `Q` ou `Échap` pour quitter. Options : `--no-overlay`,
-  `--preview-rotation 90`. Fermer la fenêtre arrête le programme.
-- **`http`** : serveur local en lecture seule, `--http-addr 127.0.0.1:7881` par défaut
-  (`0.0.0.0:7881` pour regarder depuis un autre appareil du réseau — sans authentification) :
+- **`window`**: native window (Wayland or X11), scaled image, aspect ratio kept. A debug banner
+  shows the actual frame rate, render and encode times, JPEG size and screen state (connected,
+  reconnecting, absent…). Keys: `O` banner, `R` preview rotation (0/90/180/270°), `Q` or `Esc` to
+  quit. Options: `--no-overlay`, `--preview-rotation 90`. Closing the window stops the program.
+- **`http`**: read-only local server, `--http-addr 127.0.0.1:7881` by default (`0.0.0.0:7881` to
+  watch from another device on the network — no authentication):
 
-  | Chemin | Contenu |
+  | Path | Contents |
   |---|---|
-  | `/` | page avec le flux, l'état et un sélecteur d'orientation |
-  | `/stream.mjpg` | flux MJPEG (`multipart/x-mixed-replace`) |
-  | `/frame.jpg`, `/frame.png` | dernière image (le PNG est sans perte pour le tableau de bord) |
-  | `/status.json` | cadence, temps de rendu, taille JPEG, état de l'écran |
+  | `/` | page with the stream, the status and an orientation selector |
+  | `/stream.mjpg` | MJPEG stream (`multipart/x-mixed-replace`) |
+  | `/frame.jpg`, `/frame.png` | last frame (the PNG is lossless for the dashboard) |
+  | `/status.json` | frame rate, render time, JPEG size, screen state |
 
-L'écran absent, débranché ou déjà utilisé ne fait pas planter les autres sorties : son état
-apparaît dans le bandeau et dans `/status.json`, et la connexion est retentée en continu.
-Avec `color` ou `image`, une sortie d'aperçu maintient le programme ouvert jusqu'à Ctrl-C.
+A missing, unplugged or busy screen does not crash the other outputs: its state shows in the
+banner and in `/status.json`, and the connection is retried continuously. With `color` or
+`image`, a preview output keeps the program running until Ctrl-C.
 
-### Arrêt et exclusivité
+### Exit and exclusivity
 
-- `--on-exit keep` (défaut) laisse la dernière image ; `blank` affiche un écran noir
-  « tableau de bord arrêté » ; `restore` rend la main au firmware (animation MSI d'origine).
-  `lightning restore` fait la même chose à la demande.
-- Un seul processus pilote l'écran à la fois (verrou `$XDG_RUNTIME_DIR/msi-lightning-lcd.lock`) :
-  un second lancement échoue avec un message clair au lieu de perturber le premier.
+- `--on-exit keep` (default) leaves the last frame; `blank` shows a black "dashboard stopped"
+  screen; `restore` gives control back to the firmware (original MSI animation).
+  `lightning restore` does the same on demand.
+- Only one process drives the screen at a time (lock `$XDG_RUNTIME_DIR/msi-lightning-lcd.lock`): a
+  second launch fails with a clear message instead of disturbing the first one.
 
 ### Configuration
 
-Facultative, dans `~/.config/lightning/config.toml` ; voir
-[packaging/config.example.toml](packaging/config.example.toml) (cadence, qualité JPEG,
-rotation 0/180, luminosité, panneaux affichés, disques, interface réseau, sorties,
-adresse HTTP, comportement à l'arrêt).
+Optional, in `~/.config/lightning/config.toml`; see
+[packaging/config.example.toml](packaging/config.example.toml) (frame rate, JPEG quality,
+rotation 0/180, brightness, shown panels, disks, network interface, outputs, HTTP address,
+behavior on exit).
 
-## Organisation
+## Layout
 
-| Chemin | Rôle |
+| Path | Role |
 |---|---|
-| `crates/lightning-lcd` | Protocole seul : trame HID « BY », authentification RSA, session bulk, reconnexion |
-| `crates/lightning-dashboard` | Collecte des métriques (procfs, hwmon, NVML) et rendu 1280×800 |
-| `crates/lightning` | Binaire `lightning` : commandes directes, démon D-Bus, `ctl`, diaporama, sorties `lcd` / `window` / `http` |
-| `crates/lightning-ipc` | Interface D-Bus partagée (noms, proxy zbus) |
-| `crates/lightning-gtk` | Application GNOME `lightning-settings` (GTK 4 + libadwaita) |
-| `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration, `install.sh`, paquet RPM (`rpm/`), Flatpak (`flatpak/`), AppStream |
-| `docs/PROTOCOL.md` | Protocole et historique de la rétro-ingénierie |
-| `legacy/` | Scripts Python d'origine (référence historique) |
+| `crates/lightning-lcd` | Protocol only: "BY" HID frame, RSA authentication, bulk session, reconnection |
+| `crates/lightning-dashboard` | Metrics collection (procfs, hwmon, NVML) and 1280×800 rendering |
+| `crates/lightning` | `lightning` binary: direct commands, D-Bus daemon, `ctl`, slideshow, `lcd` / `window` / `http` outputs |
+| `crates/lightning-ipc` | Shared D-Bus interface (names, zbus proxy) |
+| `crates/lightning-i18n` | Translations (PO catalogs compiled in, language from the environment) |
+| `crates/lightning-gtk` | GNOME application `lightning-settings` (GTK 4 + libadwaita) |
+| `packaging/` | udev rule, systemd user service, `.desktop`, icon, configuration example, `install.sh`, RPM package (`rpm/`), Flatpak (`flatpak/`), AppStream |
+| `docs/PROTOCOL.md` | Protocol and reverse-engineering history (French) |
+| `legacy/` | Original Python scripts (historical reference) |
 
 ```rust
 let mut display = lightning_lcd::Display::open()?;
-display.show_rgb(&pixels)?; // 1280 × 800 × 3 octets
+display.show_rgb(&pixels)?; // 1280 × 800 × 3 bytes
 ```
 
-## Limites connues
+## Known limitations
 
-- L'upload de médias dans la flash de l'écran (`transport`) n'est volontairement pas implémenté.
-- Rotation : 0 et 180° seulement (logicielle) ; la commande `rotate` du firmware n'est pas utilisée.
-- Le retour à l'animation MSI d'origine demande de couper l'alimentation de l'écran.
+- Uploading media to the screen's flash memory (`transport`) is deliberately not implemented.
+- Rotation: 0 and 180° only (in software); the firmware `rotate` command is not used.
+- Going back to the original MSI animation requires power-cycling the screen.
 
-## Contribuer
+## Contributing
 
-Construction, tests, style des commits et règles de sécurité du matériel :
-[CONTRIBUTING.md](CONTRIBUTING.md). Les bogues et demandes passent par les
-[modèles d'issue](https://github.com/wizops-cloud/lightning-lcd/issues/new/choose) ; une
-vulnérabilité se signale en privé, voir [SECURITY.md](SECURITY.md).
+Build, tests, commit style and hardware safety rules: [CONTRIBUTING.md](CONTRIBUTING.md) (French).
+Bugs and requests go through the
+[issue templates](https://github.com/wizops-cloud/lightning-lcd/issues/new/choose); report a
+vulnerability privately, see [SECURITY.md](SECURITY.md).
 
-## Licence et avertissements
+## License and disclaimers
 
 Copyright © 2026 WizOps — [wizops.fr](https://wizops.fr).
 
-Ce programme est un logiciel libre distribué sous la **GNU General Public License, version 3**
-(voir [LICENSE](LICENSE)) : vous pouvez l'utiliser, l'étudier, le modifier et le redistribuer, à
-condition de publier vos modifications sous la même licence. Il est fourni **sans aucune
-garantie**.
+This program is free software distributed under the **GNU General Public License, version 3**
+(see [LICENSE](LICENSE)): you may use, study, modify and redistribute it, provided you publish
+your changes under the same license. It comes with **no warranty**.
 
-- **Projet indépendant.** Il n'est ni affilié à MSI ou à NVIDIA, ni approuvé par eux. Les noms de
-  marques et de produits ne sont cités que pour désigner le matériel compatible et appartiennent à
-  leurs propriétaires.
-- **Interopérabilité.** Le protocole a été retrouvé par l'étude du matériel et de son pilote, sur
-  un exemplaire acheté dans le commerce, dans le seul but de le faire fonctionner sous Linux. Le
-  dépôt ne contient aucun code du constructeur. La clé RSA qui y figure est une clé publique.
-- **À vos risques.** L'écran équipe une carte graphique coûteuse. Le programme n'envoie que des
-  commandes d'affichage et de réglage ; l'écriture dans la mémoire flash de l'écran n'est
-  volontairement pas implémentée.
+- **Independent project.** It is neither affiliated with nor endorsed by MSI or NVIDIA. Brand and
+  product names are only used to identify compatible hardware and belong to their owners.
+- **Interoperability.** The protocol was recovered by studying the hardware and its driver, on a
+  retail unit, for the sole purpose of making it work on Linux. The repository contains no
+  manufacturer code. The RSA key it contains is a public key.
+- **At your own risk.** The screen sits on an expensive graphics card. The program only sends
+  display and settings commands; writing to the screen's flash memory is deliberately not
+  implemented.
 
-La police embarquée est JetBrains Mono (SIL Open Font License 1.1, voir
+The embedded font is JetBrains Mono (SIL Open Font License 1.1, see
 `crates/lightning-dashboard/assets/OFL.txt`).

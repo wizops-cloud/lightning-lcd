@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Régénère les captures de la documentation : docs/screenshots/*.png, docs/dashboard.png,
-# docs/clock.png et docs/now-playing.png.
+# Régénère les captures de la documentation, en français et en anglais :
+# docs/screenshots/*.png, docs/screenshots/en/*.png, docs/{dashboard,clock,now-playing}.png
+# et docs/en/{dashboard,clock,now-playing}.png.
 #
 #   scripts/screenshots.sh [--no-build] [--out DOSSIER]
 #
@@ -153,13 +154,25 @@ cat >"$WORK/bus.conf" <<EOF
 </busconfig>
 EOF
 
+# Langue imposée : français (docs/…) puis anglais (docs/en/…, docs/screenshots/en/…),
+# quelle que soit celle de la session.
+in_lang() { # langue (fr|en), commande…
+    local locale=fr_FR.UTF-8
+    [[ $1 == en ]] && locale=en_US.UTF-8
+    shift
+    env -u LANGUAGE -u LC_ALL -u LC_MESSAGES LANG="$locale" "$@"
+}
+
+for lang in fr en; do
+    DOCS="$ROOT/docs"
+    [[ $lang == en ]] && DOCS="$ROOT/docs/en"
+    mkdir -p "$DOCS"
 # --- Tableau de bord ----------------------------------------------------------------------
-mkdir -p "$OUT"
-XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
-    "$LIGHTNING" --config "$WORK/empty.toml" --no-lcd --demo dashboard --png "$ROOT/docs/dashboard.png"
+in_lang $lang env XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
+    "$LIGHTNING" --config "$WORK/empty.toml" --no-lcd --demo dashboard --png "$DOCS/dashboard.png"
 
 # --- Horloge et lecture en cours (images de l'écran, démon de démonstration privé) -------
-XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
+in_lang $lang env XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
     dbus-run-session --config-file="$WORK/bus.conf" -- bash -c '
         set -euo pipefail
         cp "$2" "$4/screens.toml"
@@ -174,8 +187,10 @@ XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
         sleep 1.5
         "$1" ctl frame "$4/now-playing.jpg" >/dev/null
     ' _ "$LIGHTNING" "$WORK/empty.toml" "" "$WORK"
-magick "$WORK/clock.jpg" "$ROOT/docs/clock.png"
-magick "$WORK/now-playing.jpg" "$ROOT/docs/now-playing.png"
+magick "$WORK/clock.jpg" "$DOCS/clock.png"
+magick "$WORK/now-playing.jpg" "$DOCS/now-playing.png"
+done
+mkdir -p "$OUT"
 
 # --- Compositeur sans écran ---------------------------------------------------------------
 dbus-run-session --config-file="$WORK/bus.conf" -- mutter --headless --wayland --no-x11 --virtual-monitor 1700x1200 \
@@ -188,11 +203,12 @@ done
 [[ -S "$XDG_RUNTIME_DIR/$DISPLAY_NAME" ]] || { cat "$WORK/mutter.log" >&2; exit 1; }
 
 # --- Une série de captures : démon privé + faux systemd + application ---------------------
-shoot() { # étiquette, thème, [taille]
-    local tag=$1 scheme=$2 size=${3:-}
-    echo "== captures « $tag » ($scheme${size:+, $size})"
+shoot() { # langue, dossier, étiquette, thème, [taille]
+    local lang=$1 out=$2 tag=$3 scheme=$4 size=${5:-}
+    echo "== captures « $tag » ($lang, $scheme${size:+, $size})"
+    mkdir -p "$out"
     cp "$WORK/daemon.toml" "$WORK/daemon-$tag.toml"
-    env -u DISPLAY \
+    in_lang "$lang" env -u DISPLAY \
         LIGHTNING_SCREENSHOT_BUS=1 \
         XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" XDG_DATA_HOME="$WORK/data" \
         GSETTINGS_BACKEND=memory GTK_A11Y=none NO_AT_BRIDGE=1 GDK_DEBUG=no-portals \
@@ -212,11 +228,14 @@ shoot() { # étiquette, thème, [taille]
             [[ -n $8 ]] && args+=(--size "$8")
             "$4" "${args[@]}"
         ' _ "$LIGHTNING" "$WORK/daemon-$tag.toml" "$ROOT/scripts/fake-systemd.py" "$SETTINGS" \
-        "$OUT" "$tag" "$scheme" "$size"
+        "$out" "$tag" "$scheme" "$size"
 }
 
-shoot sombre dark
-shoot clair light
-shoot etroit dark 420x780
+shoot fr "$OUT" sombre dark
+shoot fr "$OUT" clair light
+shoot fr "$OUT" etroit dark 420x780
+shoot en "$OUT/en" dark dark
+shoot en "$OUT/en" light light
+shoot en "$OUT/en" narrow dark 420x780
 
-echo "captures écrites dans $OUT et $ROOT/docs/{dashboard,clock,now-playing}.png"
+echo "captures écrites dans $OUT, $OUT/en, $ROOT/docs et $ROOT/docs/en"

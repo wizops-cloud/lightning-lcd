@@ -1,0 +1,666 @@
+# Traduction anglaise de lightning-lcd (app).
+# Texte source : le français du code (tr / trf). Les {paramètres} sont conservés.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+msgid "Aucun fichier choisi"
+msgstr "No file chosen"
+
+msgid "Ce fichier n'est pas accessible localement"
+msgstr "This file is not available locally"
+
+msgid "Choisir une image"
+msgstr "Choose an Image"
+
+msgid "Images"
+msgstr "Images"
+
+msgid "Choisir une vidéo"
+msgstr "Choose a Video"
+
+msgid "Vidéos"
+msgstr "Videos"
+
+msgid "Ajoutez d'abord un dossier de photos"
+msgstr "Add a photo folder first"
+
+msgid "Ajouter un dossier de photos"
+msgstr "Add a Photo Folder"
+
+msgid "Ce dossier n'est pas accessible localement"
+msgstr "This folder is not available locally"
+
+msgid "Ce dossier fait déjà partie du diaporama"
+msgstr "This folder is already in the slideshow"
+
+msgid "Dossier ajouté au diaporama"
+msgstr "Folder added to the slideshow"
+
+msgid "Import annulé"
+msgstr "Import canceled"
+
+msgid "Cache des photos Google vidé"
+msgstr "Google photo cache cleared"
+
+msgid "Renseignez l'identifiant client et le secret client"
+msgstr "Enter the client ID and the client secret"
+
+msgid "Identifiants enregistrés"
+msgstr "Credentials saved"
+
+msgid "Le service se lancera à l'ouverture de session"
+msgstr "The service will start at login"
+
+msgid "Le service ne se lancera plus tout seul"
+msgstr "The service will no longer start on its own"
+
+msgid "Service redémarré"
+msgstr "Service restarted"
+
+msgid "Aperçu HTTP activé"
+msgstr "HTTP preview on"
+
+msgid "Aperçu HTTP coupé"
+msgstr "HTTP preview off"
+
+msgid "Lecteur préféré enregistré"
+msgstr "Preferred player saved"
+
+msgid "Adresse de l'aperçu enregistrée"
+msgstr "Preview address saved"
+
+msgid "Aucun dossier choisi"
+msgstr "No folder chosen"
+
+msgid "photo"
+msgstr "photo"
+
+msgid "photos"
+msgstr "photos"
+
+msgid "dossier"
+msgstr "folder"
+
+msgid "dossiers"
+msgstr "folders"
+
+msgid "État de la liaison avec l'écran"
+msgstr "Screen connection status"
+
+msgid "Aucune lecture en cours"
+msgstr "Nothing playing"
+
+msgid "Visible quand ce contenu est affiché"
+msgstr "Shown when this content is on screen"
+
+msgid "dossier de photos"
+msgstr "photo folder"
+
+msgid "dossiers de photos"
+msgstr "photo folders"
+
+msgid "Annuler l'import"
+msgstr "Cancel Import"
+
+msgid "Choisir des photos Google…"
+msgstr "Choose Google Photos…"
+
+msgid "Aucune photo Google sur ce PC"
+msgstr "No Google photos on this PC"
+
+msgid "photo Google"
+msgstr "Google photo"
+
+msgid "photos Google"
+msgstr "Google photos"
+
+msgid "Retirer ce dossier du diaporama"
+msgstr "Remove this folder from the slideshow"
+
+msgid "Dossier retiré du diaporama"
+msgstr "Folder removed from the slideshow"
+
+msgid "Aucune photo"
+msgstr "No photos"
+
+msgid "Disques"
+msgstr "Disks"
+
+msgid "Réseau"
+msgstr "Network"
+
+msgid "Aucun panneau activé : l'écran reste vide"
+msgstr "No panel turned on: the screen stays empty"
+
+msgid "Glisser pour réordonner"
+msgstr "Drag to reorder"
+
+msgid "Monter"
+msgstr "Move up"
+
+msgid "Descendre"
+msgstr "Move down"
+
+msgid "Le service pilote l'écran en arrière-plan, même quand cette fenêtre est fermée."
+msgstr "The service drives the screen in the background, even when this window is closed."
+
+msgid "Consultez « journalctl --user -u lightning-dashboard », puis redémarrez le service."
+msgstr "Check “journalctl --user -u lightning-dashboard”, then restart the service."
+
+msgid "L'écran n'est pas piloté tant que le service est arrêté."
+msgstr "The screen is not driven while the service is stopped."
+
+msgid "Le service Lightning n'est pas installé"
+msgstr "The Lightning service is not installed"
+
+msgid "Installez l'unité lightning-dashboard.service (voir le README), puis relancez l'application."
+msgstr "Install the lightning-dashboard.service unit (see the README), then restart the app."
+
+msgid "Le service Lightning a échoué"
+msgstr "The Lightning service failed"
+
+msgid "Consultez « journalctl --user -u lightning-dashboard », puis relancez le service."
+msgstr "Check “journalctl --user -u lightning-dashboard”, then start the service again."
+
+msgid "Le service démarre…"
+msgstr "The service is starting…"
+
+msgid "Connexion au démon en cours."
+msgstr "Connecting to the daemon."
+
+msgid "Le service Lightning est arrêté"
+msgstr "The Lightning service is stopped"
+
+msgid "L'écran de la carte graphique n'est pas piloté pour l'instant."
+msgstr "The graphics card screen is not being driven right now."
+
+msgid "{level} %"
+msgstr "{level}%"
+
+msgid "{fps} img/s"
+msgstr "{fps} fps"
+
+msgid "{fps} images/s · rendu {render} ms · {sent} images envoyées"
+msgstr "{fps} frames/s · render {render} ms · {sent} frames sent"
+
+msgid "{photos} dans {folders}"
+msgstr "{photos} in {folders}"
+
+msgid "État : {state}"
+msgstr "Status: {state}"
+
+msgid "{photos} sur ce PC"
+msgstr "{photos} on this PC"
+
+msgid "Retirer le dossier {name} du diaporama"
+msgstr "Remove the {name} folder from the slideshow"
+
+msgid "plus de {n} photos"
+msgstr "more than {n} photos"
+
+msgid "Monter le panneau {title}"
+msgstr "Move the {title} panel up"
+
+msgid "Descendre le panneau {title}"
+msgstr "Move the {title} panel down"
+
+msgid "Afficher le panneau {title}"
+msgstr "Show the {title} panel"
+
+msgid "Réglage de l'écran LCD intégré à la carte graphique : tableau de bord de l'état du PC, image, vidéo, diaporama.\n\nProjet indépendant, sans lien avec le fabricant de la carte."
+msgstr "Settings for the LCD screen built into the graphics card: PC status dashboard, image, video, slideshow.\n\nIndependent project, not affiliated with the card manufacturer."
+
+msgid "Bus de session inaccessible"
+msgstr "Session bus unavailable"
+
+msgid "Identifiants OAuth à renseigner"
+msgstr "OAuth credentials needed"
+
+msgid "Prêt"
+msgstr "Ready"
+
+msgid "En attente de votre autorisation dans le navigateur"
+msgstr "Waiting for your authorization in the browser"
+
+msgid "En attente de votre sélection dans Google Photos"
+msgstr "Waiting for your selection in Google Photos"
+
+msgid "Téléchargement"
+msgstr "Downloading"
+
+msgid "Échec"
+msgstr "Failed"
+
+msgid "Inconnu"
+msgstr "Unknown"
+
+msgid "Connecté"
+msgstr "Connected"
+
+msgid "Connexion en cours…"
+msgstr "Connecting…"
+
+msgid "Reconnexion en cours…"
+msgstr "Reconnecting…"
+
+msgid "Introuvable"
+msgstr "Not found"
+
+msgid "Rendu au firmware"
+msgstr "Handed back to firmware"
+
+msgid "Désactivé"
+msgstr "Disabled"
+
+msgid "En cours d'exécution"
+msgstr "Running"
+
+msgid "Démarrage…"
+msgstr "Starting…"
+
+msgid "Arrêt…"
+msgstr "Stopping…"
+
+msgid "En échec"
+msgstr "Failed"
+
+msgid "Arrêté"
+msgstr "Stopped"
+
+msgid "Non installé"
+msgstr "Not installed"
+
+msgid "Accueil"
+msgstr "Home"
+
+msgid "Ce que l'écran affiche en ce moment"
+msgstr "What the screen is showing right now"
+
+msgid "Contenu"
+msgstr "Content"
+
+msgid "Choisissez ce que l'écran affiche"
+msgstr "Choose what the screen shows"
+
+msgid "Diaporama"
+msgstr "Slideshow"
+
+msgid "Vos photos, depuis ce PC ou Google Photos"
+msgstr "Your photos, from this PC or Google Photos"
+
+msgid "Tableau de bord"
+msgstr "Dashboard"
+
+msgid "Panneaux affichés et leur ordre"
+msgstr "Shown panels and their order"
+
+msgid "Réglages"
+msgstr "Settings"
+
+msgid "Écran, arrêt et aperçu dans un navigateur"
+msgstr "Screen, shutdown and browser preview"
+
+msgid "Service"
+msgstr "Service"
+
+msgid "Le programme qui fait tourner l'écran en arrière-plan"
+msgstr "The program that drives the screen in the background"
+
+msgid "État du PC en temps réel"
+msgstr "Live PC status"
+
+msgid "Image"
+msgstr "Image"
+
+msgid "Une image fixe"
+msgstr "A still image"
+
+msgid "Vidéo"
+msgstr "Video"
+
+msgid "Une vidéo, en boucle ou non"
+msgstr "A video, looped or not"
+
+msgid "Vos photos qui défilent"
+msgstr "Your photos, one after another"
+
+msgid "Horloge"
+msgstr "Clock"
+
+msgid "L'heure en grand, lisible de loin"
+msgstr "Large time, readable from afar"
+
+msgid "En cours de lecture"
+msgstr "Now playing"
+
+msgid "Le morceau joué sur ce PC"
+msgstr "The track playing on this PC"
+
+msgid "Couleur"
+msgstr "Color"
+
+msgid "Une couleur unie"
+msgstr "A solid color"
+
+msgid "Animation d'origine"
+msgstr "Original animation"
+
+msgid "L'écran reprend son animation"
+msgstr "The screen plays its own animation"
+
+msgid "Carte graphique"
+msgstr "Graphics card"
+
+msgid "Charge, température, mémoire vidéo, puissance"
+msgstr "Load, temperature, video memory, power"
+
+msgid "Processeur"
+msgstr "Processor"
+
+msgid "Charge globale et par cœur, température, fréquence"
+msgstr "Overall and per-core load, temperature, frequency"
+
+msgid "Mémoire"
+msgstr "Memory"
+
+msgid "Mémoire vive et espace d'échange utilisés"
+msgstr "Used RAM and swap"
+
+msgid "Occupation des points de montage"
+msgstr "Mount point usage"
+
+msgid "Débits descendant et montant"
+msgstr "Download and upload rates"
+
+msgid "Aléatoire"
+msgstr "Random"
+
+msgid "Chronologique"
+msgstr "Chronological"
+
+msgid "Photo entière sur fond flou"
+msgstr "Whole photo on a blurred background"
+
+msgid "Remplir l'écran (rogner)"
+msgstr "Fill the screen (crop)"
+
+msgid "Conserver la dernière image"
+msgstr "Keep the last image"
+
+msgid "Afficher un écran noir"
+msgstr "Show a black screen"
+
+msgid "Rendre l'écran à son animation"
+msgstr "Hand the screen back to its animation"
+
+msgid "Remplir (rogner)"
+msgstr "Fill (crop)"
+
+msgid "Adapter (bandes noires)"
+msgstr "Fit (black bars)"
+
+msgid "Étirer"
+msgstr "Stretch"
+
+msgid "Aperçu en direct de l'écran"
+msgstr "Live screen preview"
+
+msgid "En attente d'une image…"
+msgstr "Waiting for an image…"
+
+msgid "Contenu affiché"
+msgstr "Shown content"
+
+msgid "Images envoyées par seconde"
+msgstr "Frames sent per second"
+
+msgid "Temps de rendu de la dernière image"
+msgstr "Render time of the last frame"
+
+msgid "Luminosité confirmée par l'écran"
+msgstr "Brightness confirmed by the screen"
+
+msgid "Luminosité de l'écran"
+msgstr "Screen brightness"
+
+msgid "Luminosité"
+msgstr "Brightness"
+
+msgid "Afficher"
+msgstr "Show"
+
+msgid "Changez de contenu d'un clic"
+msgstr "Switch content in one click"
+
+msgid "Panneaux et ordre"
+msgstr "Panels and order"
+
+msgid "Réglables dans la page « Tableau de bord »"
+msgstr "Set on the “Dashboard” page"
+
+msgid "Fichier"
+msgstr "File"
+
+msgid "Choisir une image…"
+msgstr "Choose an Image…"
+
+msgid "Ajustement"
+msgstr "Fit"
+
+msgid "Choisir une vidéo…"
+msgstr "Choose a Video…"
+
+msgid "Lire en boucle"
+msgstr "Loop"
+
+msgid "Photos"
+msgstr "Photos"
+
+msgid "Régler le diaporama"
+msgstr "Slideshow Settings"
+
+msgid "Secondes"
+msgstr "Seconds"
+
+msgid "Affichées en plus petit à côté de l'heure"
+msgstr "Shown smaller next to the time"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Jour, mois et année sous l'heure"
+msgstr "Day, month and year below the time"
+
+msgid "Morceau"
+msgstr "Track"
+
+msgid "Lecteur préféré (ex. spotify ; vide = celui qui joue)"
+msgstr "Preferred player (e.g. spotify; empty = the one playing)"
+
+msgid "Couleur de l'écran"
+msgstr "Screen color"
+
+msgid "Choisissez une teinte ou ouvrez le sélecteur"
+msgstr "Pick a shade or open the color chooser"
+
+msgid "Teintes"
+msgstr "Shades"
+
+msgid "Écran rendu à son firmware"
+msgstr "Screen handed back to its firmware"
+
+msgid "L'animation d'origine reprend ; choisissez un autre contenu pour reprendre la main"
+msgstr "The original animation resumes; choose other content to take over again"
+
+msgid "Options"
+msgstr "Options"
+
+msgid "Ajouter un dossier"
+msgstr "Add a folder"
+
+msgid "Ajouter un dossier de photos au diaporama"
+msgstr "Add a photo folder to the slideshow"
+
+msgid "Vos photos Google"
+msgstr "Your Google photos"
+
+msgid "Choisissez des photos ou des albums dans Google Photos : ils sont copiés sur ce PC et rejoignent le diaporama. Rien n'est envoyé ailleurs que chez Google."
+msgstr "Pick photos or albums in Google Photos: they are copied to this PC and join the slideshow. Nothing is sent anywhere but Google."
+
+msgid "Vider le cache"
+msgstr "Clear Cache"
+
+msgid "Identifiants OAuth"
+msgstr "OAuth credentials"
+
+msgid "Client « application de bureau » créé dans votre Google Cloud Console"
+msgstr "“Desktop app” client created in your Google Cloud Console"
+
+msgid "Identifiant client"
+msgstr "Client ID"
+
+msgid "Secret client"
+msgstr "Client secret"
+
+msgid "Enregistrer"
+msgstr "Save"
+
+msgid "Enregistrer les identifiants"
+msgstr "Save the credentials"
+
+msgid "Conservés dans ~/.config/lightning/config.toml"
+msgstr "Stored in ~/.config/lightning/config.toml"
+
+msgid "Durée par photo"
+msgstr "Time per photo"
+
+msgid "En secondes"
+msgstr "In seconds"
+
+msgid "Ordre"
+msgstr "Order"
+
+msgid "L'ordre chronologique suit la date de prise de vue"
+msgstr "Chronological order follows the date taken"
+
+msgid "Fondu enchaîné"
+msgstr "Crossfade"
+
+msgid "Transition douce entre deux photos"
+msgstr "Smooth transition between photos"
+
+msgid "Légende"
+msgstr "Caption"
+
+msgid "Date de la photo et nom de son dossier"
+msgstr "Photo date and folder name"
+
+msgid "Dossiers"
+msgstr "Folders"
+
+msgid "Parcourus avec leurs sous-dossiers (JPEG, PNG, WebP)"
+msgstr "Scanned with their subfolders (JPEG, PNG, WebP)"
+
+msgid "Lecture"
+msgstr "Playback"
+
+msgid "Schéma de la disposition des panneaux"
+msgstr "Panel layout diagram"
+
+msgid "Disposition"
+msgstr "Layout"
+
+msgid "Aperçu de l'ordre des panneaux sur l'écran"
+msgstr "Preview of the panel order on the screen"
+
+msgid "Panneaux"
+msgstr "Panels"
+
+msgid "Activez-les, puis glissez-les ou utilisez les flèches ; l'ordre s'applique au sein de chaque rangée"
+msgstr "Turn them on, then drag them or use the arrows; the order applies within each row"
+
+msgid "Orientation"
+msgstr "Orientation"
+
+msgid "Retourne l'image si l'écran est monté tête en bas"
+msgstr "Flips the image if the screen is mounted upside down"
+
+msgid "Normale"
+msgstr "Normal"
+
+msgid "Retournée (180°)"
+msgstr "Upside down (180°)"
+
+msgid "Images par seconde"
+msgstr "Frames per second"
+
+msgid "Cadence de rafraîchissement du tableau de bord"
+msgstr "Dashboard refresh rate"
+
+msgid "Écran"
+msgstr "Screen"
+
+msgid "Performances"
+msgstr "Performance"
+
+msgid "À l'arrêt du service"
+msgstr "When the service stops"
+
+msgid "Ce que l'écran affiche une fois le service arrêté"
+msgstr "What the screen shows once the service has stopped"
+
+msgid "Aperçu HTTP"
+msgstr "HTTP preview"
+
+msgid "Page, flux MJPEG, dernière image et état JSON — sans authentification"
+msgstr "Page, MJPEG stream, last frame and JSON status — no authentication"
+
+msgid "Adresse d'écoute (IP:port)"
+msgstr "Listen address (IP:port)"
+
+msgid "Ouvrir l'aperçu dans le navigateur"
+msgstr "Open the preview in a browser"
+
+msgid "État"
+msgstr "Status"
+
+msgid "Arrêt"
+msgstr "Shutdown"
+
+msgid "Aperçu dans un navigateur"
+msgstr "Browser preview"
+
+msgid "Redémarrer le service"
+msgstr "Restart Service"
+
+msgid "Service en marche"
+msgstr "Service running"
+
+msgid "Arrêter le service libère l'écran"
+msgstr "Stopping the service releases the screen"
+
+msgid "Lancer à l'ouverture de session"
+msgstr "Start at login"
+
+msgid "Version du démon"
+msgstr "Daemon version"
+
+msgid "Pages"
+msgstr "Pages"
+
+msgid "À propos de Lightning"
+msgstr "About Lightning"
+
+msgid "Quitter"
+msgstr "Quit"
+
+msgid "Menu principal"
+msgstr "Main Menu"
+
+msgid "Démarrer le service"
+msgstr "Start Service"
+
+msgid "Couleur #{hex}"
+msgstr "Color #{hex}"

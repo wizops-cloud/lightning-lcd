@@ -272,7 +272,7 @@ impl TokenStorage {
                 ("application", "cloud.wizops.Lightning"),
                 ("type", "google-refresh-token"),
             ],
-            "Lightning : accès à Google Photos",
+            lightning_i18n::tr("Lightning : accès à Google Photos"),
         )
         .map_err(|e| warn!("trousseau indisponible ({e}) : jeton Google dans un fichier"))
         .ok()

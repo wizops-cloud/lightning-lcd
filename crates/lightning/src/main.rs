@@ -22,6 +22,7 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result, bail};
 use clap::{Parser, Subcommand};
 use lightning_dashboard::{Collector, DashboardConfig, Renderer};
+use lightning_i18n::{tr, trf};
 use lightning_ipc::{Fit, OnExit};
 use lightning_lcd::HidControl;
 use lightning_lcd::display::encode_jpeg;
@@ -123,6 +124,7 @@ enum Cmd {
 }
 
 fn main() -> std::process::ExitCode {
+    lightning_i18n::init();
     let cli = Cli::parse();
     // Le détail ne concerne que nos crates : winit et consorts restent discrets.
     let default_level = match cli.verbose {
@@ -141,7 +143,10 @@ fn main() -> std::process::ExitCode {
     match run(cli) {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("erreur : {e:#}");
+            eprintln!(
+                "{}",
+                trf("erreur : {error}", &[("error", &format!("{e:#}"))])
+            );
             std::process::ExitCode::FAILURE
         }
     }
@@ -172,7 +177,7 @@ fn merge_cli(config: &mut Config, cli: &Cli) -> Result<()> {
     if let Some(rotation) = cli.preview_rotation {
         anyhow::ensure!(
             matches!(rotation, 0 | 90 | 180 | 270),
-            "--preview-rotation : 0, 90, 180 ou 270"
+            tr("--preview-rotation : 0, 90, 180 ou 270")
         );
         out.preview_rotation = rotation;
     }
@@ -192,7 +197,9 @@ fn build_outputs(
 ) -> Result<Outputs> {
     let out = &config.output;
     if out.outputs.is_empty() {
-        bail!("aucune sortie active : ajouter --output window ou --output http avec --no-lcd");
+        bail!(tr(
+            "aucune sortie active : ajouter --output window ou --output http avec --no-lcd"
+        ));
     }
     let quality = config.dashboard.quality;
     let stats = SharedStats::default();
@@ -253,7 +260,9 @@ pub(crate) fn window_sink(
     _: &SharedStats,
     _: &Arc<AtomicBool>,
 ) -> Result<Box<dyn Sink>> {
-    bail!("ce binaire a été compilé sans la fenêtre d'aperçu (feature `window`)")
+    bail!(tr(
+        "ce binaire a été compilé sans la fenêtre d'aperçu (feature `window`)"
+    ))
 }
 
 fn run(cli: Cli) -> Result<()> {
@@ -274,7 +283,7 @@ fn run(cli: Cli) -> Result<()> {
     {
         let stop = stop.clone();
         ctrlc::set_handler(move || stop.store(true, Ordering::SeqCst))
-            .context("installation du gestionnaire de signaux")?;
+            .context(tr("installation du gestionnaire de signaux"))?;
     }
     let extend = !cli.no_extend;
 
@@ -357,11 +366,11 @@ fn restore() -> Result<()> {
     let mut hid = HidControl::open()?;
     match hid.restore()? {
         Some(st) if !st.is_extended() => {
-            println!("écran rendu au firmware (mode autonome)");
+            println!("{}", tr("écran rendu au firmware (mode autonome)"));
             Ok(())
         }
-        Some(_) => bail!("le firmware est resté en mode écran étendu"),
-        None => bail!("pas de réponse du firmware sur le canal HID"),
+        Some(_) => bail!(tr("le firmware est resté en mode écran étendu")),
+        None => bail!(tr("pas de réponse du firmware sur le canal HID")),
     }
 }
 
@@ -369,24 +378,32 @@ fn status() -> Result<()> {
     let mut hid = HidControl::open()?;
     match hid.status()? {
         Some(st) => {
-            println!("modèle        : {}", st.model);
-            println!("numéro série  : {}", st.sn);
-            println!("firmware      : {}", st.version.firmware);
-            println!(
-                "versions      : app {}, sdk {}, matériel {}",
-                st.version.app, st.version.sdk, st.version.hardware
+            let line = |label: &str, value: String| println!("{label:<14}: {value}");
+            line(tr("modèle"), st.model.clone());
+            line(tr("numéro série"), st.sn.clone());
+            line(tr("firmware"), st.version.firmware.clone());
+            line(
+                tr("versions"),
+                trf(
+                    "app {app}, sdk {sdk}, matériel {hardware}",
+                    &[
+                        ("app", &st.version.app),
+                        ("sdk", &st.version.sdk),
+                        ("hardware", &st.version.hardware),
+                    ],
+                ),
             );
-            println!("luminosité    : {} %", st.brightness);
-            println!("rotation      : {}°", st.degree);
+            line(tr("luminosité"), format!("{} %", st.brightness));
+            line(tr("rotation"), format!("{}°", st.degree));
             let mode = if st.is_extended() {
-                "écran étendu (affiche le flux USB)"
+                tr("écran étendu (affiche le flux USB)")
             } else {
-                "autonome (animation interne)"
+                tr("autonome (animation interne)")
             };
-            println!("mode          : {mode}");
+            line(tr("mode"), mode.to_owned());
             Ok(())
         }
-        None => bail!("pas de réponse du firmware sur le canal HID"),
+        None => bail!(tr("pas de réponse du firmware sur le canal HID")),
     }
 }
 
@@ -394,7 +411,7 @@ fn brightness(level: u8) -> Result<()> {
     let mut hid = HidControl::open()?;
     match hid.set_brightness(level)? {
         Some(st) => {
-            println!("luminosité : {} %", st.brightness);
+            println!("{} : {} %", tr("luminosité"), st.brightness);
             if st.brightness != u32::from(level) {
                 warn!(
                     "le firmware annonce {} % au lieu de {level} %",
@@ -403,7 +420,7 @@ fn brightness(level: u8) -> Result<()> {
             }
             Ok(())
         }
-        None => bail!("pas de réponse du firmware sur le canal HID"),
+        None => bail!(tr("pas de réponse du firmware sur le canal HID")),
     }
 }
 
@@ -432,7 +449,7 @@ fn video(mut out: Outputs, file: &str, fps: f32, looped: bool, stop: &AtomicBool
     let stdout = child
         .stdout
         .take()
-        .context("sortie de ffmpeg indisponible")?;
+        .context(tr("sortie de ffmpeg indisponible"))?;
     // ffmpeg cadence déjà le flux (-re) : pas de limitation supplémentaire.
     let result = pump(&mut out, stdout, 0.0, stop);
     let _ = child.kill();
@@ -440,7 +457,10 @@ fn video(mut out: Outputs, file: &str, fps: f32, looped: bool, stop: &AtomicBool
     let frames = result?;
     info!(frames, "vidéo terminée");
     if frames == 0 && !status.success() {
-        bail!("ffmpeg n'a produit aucune image ({status})");
+        bail!(trf(
+            "ffmpeg n'a produit aucune image ({status})",
+            &[("status", &status)]
+        ));
     }
     finish_stream(out)
 }
@@ -475,10 +495,10 @@ fn run_daemon(
             Some(connection)
         }
         Err(zbus::Error::NameTaken) => {
-            bail!(
-                "un autre démon lightning tient déjà le nom D-Bus {}",
-                lightning_ipc::BUS_NAME
-            )
+            bail!(trf(
+                "un autre démon lightning tient déjà le nom D-Bus {name}",
+                &[("name", &lightning_ipc::BUS_NAME)]
+            ))
         }
         Err(e) => {
             warn!("interface D-Bus indisponible ({e}) : démon non pilotable");
@@ -525,8 +545,11 @@ fn dashboard_png(cfg: &DashboardConfig, demo: bool, path: &Path) -> Result<()> {
         lightning_dashboard::render::HEIGHT,
         image::ExtendedColorType::Rgba8,
     )
-    .with_context(|| format!("écriture de {}", path.display()))?;
-    println!("capture écrite : {}", path.display());
+    .with_context(|| trf("écriture de {path}", &[("path", &path.display())]))?;
+    println!(
+        "{}",
+        trf("capture écrite : {path}", &[("path", &path.display())])
+    );
     Ok(())
 }
 

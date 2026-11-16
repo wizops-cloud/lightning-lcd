@@ -27,9 +27,9 @@ pub fn is_heif(path: &Path) -> bool {
 pub fn decode(path: &Path) -> Result<DynamicImage, String> {
     use libheif_rs::{ColorSpace, HeifContext, LibHeif, RgbChroma};
 
-    let name = path
-        .to_str()
-        .ok_or_else(|| format!("chemin non UTF-8 : {}", path.display()))?;
+    let name = path.to_str().ok_or_else(|| {
+        lightning_i18n::trf("chemin non UTF-8 : {path}", &[("path", &path.display())])
+    })?;
     let context = HeifContext::read_from_file(name).map_err(|e| e.to_string())?;
     let handle = context.primary_image_handle().map_err(|e| e.to_string())?;
     let image = LibHeif::new()
@@ -38,16 +38,19 @@ pub fn decode(path: &Path) -> Result<DynamicImage, String> {
     let planes = image.planes();
     let plane = planes
         .interleaved
-        .ok_or("image HEIF sans plan RGBA entrelacé")?;
+        .ok_or(lightning_i18n::tr("image HEIF sans plan RGBA entrelacé"))?;
     let (width, height) = (plane.width, plane.height);
     let row = width as usize * 4;
     let mut rgba = Vec::with_capacity(row * height as usize);
     for line in plane.data.chunks(plane.stride).take(height as usize) {
-        rgba.extend_from_slice(line.get(..row).ok_or("plan HEIF tronqué")?);
+        rgba.extend_from_slice(
+            line.get(..row)
+                .ok_or(lightning_i18n::tr("plan HEIF tronqué"))?,
+        );
     }
     image::RgbaImage::from_raw(width, height, rgba)
         .map(DynamicImage::ImageRgba8)
-        .ok_or_else(|| "plan HEIF tronqué".to_owned())
+        .ok_or_else(|| lightning_i18n::tr("plan HEIF tronqué").to_owned())
 }
 
 /// Sans la fonctionnalité `heic` : erreur explicite.

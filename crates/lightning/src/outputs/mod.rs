@@ -59,11 +59,11 @@ pub enum LcdState {
 impl LcdState {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Disabled => "désactivé",
-            Self::Connecting => "connexion…",
-            Self::Connected => "connecté",
-            Self::Reconnecting => "reconnexion…",
-            Self::Absent => "absent",
+            Self::Disabled => lightning_i18n::tr("désactivé"),
+            Self::Connecting => lightning_i18n::tr("connexion…"),
+            Self::Connected => lightning_i18n::tr("connecté"),
+            Self::Reconnecting => lightning_i18n::tr("reconnexion…"),
+            Self::Absent => lightning_i18n::tr("absent"),
         }
     }
 }

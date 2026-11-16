@@ -11,12 +11,12 @@ use lightning_ipc::Fit;
 pub fn parse_color(text: &str) -> Result<[u8; 3]> {
     let hex = text.trim_start_matches('#');
     if hex.len() != 6 || !hex.is_ascii() {
-        bail!("couleur attendue au format RRGGBB");
+        bail!(lightning_i18n::tr("couleur attendue au format RRGGBB"));
     }
     let mut rgb = [0u8; 3];
     for (i, channel) in rgb.iter_mut().enumerate() {
         *channel = u8::from_str_radix(&hex[2 * i..2 * i + 2], 16)
-            .context("couleur attendue au format RRGGBB")?;
+            .context(lightning_i18n::tr("couleur attendue au format RRGGBB"))?;
     }
     Ok(rgb)
 }
@@ -31,13 +31,19 @@ pub fn load_image(path: &Path, fit: Fit, width: u32, height: u32) -> Result<Vec<
     let img = if crate::heif::is_heif(path) {
         crate::heif::decode(path)
             .map_err(anyhow::Error::msg)
-            .with_context(|| format!("décodage de {}", path.display()))?
+            .with_context(|| {
+                lightning_i18n::trf("décodage de {path}", &[("path", &path.display())])
+            })?
     } else {
         image::ImageReader::open(path)
-            .with_context(|| format!("ouverture de {}", path.display()))?
+            .with_context(|| {
+                lightning_i18n::trf("ouverture de {path}", &[("path", &path.display())])
+            })?
             .with_guessed_format()?
             .decode()
-            .with_context(|| format!("décodage de {}", path.display()))?
+            .with_context(|| {
+                lightning_i18n::trf("décodage de {path}", &[("path", &path.display())])
+            })?
     };
     let filter = FilterType::CatmullRom;
     let fitted = match fit {
@@ -90,8 +96,9 @@ pub fn spawn_ffmpeg(
         ])
         .stdin(Stdio::null())
         .stdout(Stdio::piped());
-    cmd.spawn()
-        .context("lancement de ffmpeg (est-il installé ?)")
+    cmd.spawn().context(lightning_i18n::tr(
+        "lancement de ffmpeg (est-il installé ?)",
+    ))
 }
 
 #[cfg(test)]

@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use lightning_dashboard::{ClockConfig, Collector, Renderer};
+use lightning_i18n::{tr, trf};
 use lightning_ipc::{Fit, Mode, OnExit, WIDGETS};
 use lightning_lcd::HidControl;
 use lightning_lcd::display::encode_jpeg;
@@ -145,9 +146,9 @@ impl Handle {
         let (tx, rx) = mpsc::channel();
         self.tx
             .send(Event::Request(request, tx))
-            .map_err(|_| "le démon s'arrête".to_owned())?;
+            .map_err(|_| tr("le démon s'arrête").to_owned())?;
         rx.recv_timeout(Duration::from_secs(20))
-            .map_err(|_| "le démon n'a pas répondu".to_owned())?
+            .map_err(|_| tr("le démon n'a pas répondu").to_owned())?
     }
 
     pub fn state(&self) -> PublicState {
@@ -284,7 +285,7 @@ fn brightness_worker(jobs: Receiver<BrightnessJob>, events: Sender<Event>) {
         };
         let event = match result {
             Ok(Some(status)) => Ok(status.brightness),
-            Ok(None) => Err("pas de réponse du firmware".to_owned()),
+            Ok(None) => Err(tr("pas de réponse du firmware").to_owned()),
             Err(e) => Err(e.to_string()),
         };
         if events.send(Event::Brightness(event)).is_err() {
@@ -341,7 +342,7 @@ impl Engine {
         for kind in &cfg.output.outputs {
             match kind {
                 OutputKind::Lcd => {
-                    let rgba = text::stopped_frame(WIDTH, HEIGHT, "démon arrêté");
+                    let rgba = text::stopped_frame(WIDTH, HEIGHT, tr("démon arrêté"));
                     let sink = LcdSink::spawn(
                         LcdOptions {
                             extend,
@@ -413,7 +414,9 @@ impl Engine {
         };
         engine.importer.reset(engine.cfg.google.is_configured());
         if demo && engine.lcd.is_none() {
-            engine.stats.set_lcd(LcdState::Connected, "démonstration");
+            engine
+                .stats
+                .set_lcd(LcdState::Connected, tr("démonstration"));
             engine.firmware_brightness = 100;
         }
         let wanted = engine.cfg.daemon.mode;
@@ -522,10 +525,13 @@ impl Engine {
     fn start_video(&mut self) -> Reply {
         let d = &self.cfg.daemon;
         if d.video_path.is_empty() {
-            return Err("aucune vidéo choisie".into());
+            return Err(tr("aucune vidéo choisie").into());
         }
         if !d.video_path.contains("://") && !Path::new(&d.video_path).exists() {
-            return Err(format!("vidéo introuvable : {}", d.video_path));
+            return Err(trf(
+                "vidéo introuvable : {path}",
+                &[("path", &d.video_path)],
+            ));
         }
         let mut child = media::spawn_ffmpeg(
             &d.video_path,
@@ -536,7 +542,10 @@ impl Engine {
             HEIGHT,
         )
         .map_err(|e| format!("{e:#}"))?;
-        let stdout = child.stdout.take().ok_or("sortie de ffmpeg indisponible")?;
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or(tr("sortie de ffmpeg indisponible"))?;
         self.video_generation += 1;
         let generation = self.video_generation;
         let events = self.tx.clone();
@@ -565,7 +574,7 @@ impl Engine {
             Mode::Image => {
                 let d = &self.cfg.daemon;
                 if d.image_path.is_empty() {
-                    return Err("aucune image choisie".into());
+                    return Err(tr("aucune image choisie").into());
                 }
                 let rgba = media::load_image(Path::new(&d.image_path), d.image_fit, WIDTH, HEIGHT)
                     .map_err(|e| format!("{e:#}"))?;
@@ -576,8 +585,8 @@ impl Engine {
                 Some(media::solid(rgb, WIDTH, HEIGHT))
             }
             Mode::MsiAnimation => Some(message_frame(
-                "animation MSI",
-                "l'écran est rendu à son firmware",
+                tr("animation MSI"),
+                tr("l'écran est rendu à son firmware"),
             )),
         };
         self.video = None;
@@ -619,8 +628,12 @@ impl Engine {
         } else {
             addr.to_owned()
         };
-        addr.parse::<std::net::SocketAddr>()
-            .map_err(|_| format!("adresse « {addr} » invalide (attendu : IP:port)"))?;
+        addr.parse::<std::net::SocketAddr>().map_err(|_| {
+            trf(
+                "adresse « {addr} » invalide (attendu : IP:port)",
+                &[("addr", &addr)],
+            )
+        })?;
         self.out.remove_sink("http");
         if enabled {
             // Le port de l'ancien serveur se libère en quelques dizaines de ms.
@@ -698,19 +711,19 @@ impl Engine {
             Request::Restore => self.enter_mode(Mode::MsiAnimation)?,
             Request::SetBrightness(level) => {
                 if level > 100 {
-                    return Err("luminosité attendue entre 0 et 100".into());
+                    return Err(tr("luminosité attendue entre 0 et 100").into());
                 }
                 self.request_brightness(level);
             }
             Request::SetFps(fps) => {
                 if !fps.is_finite() || !(0.1..=30.0).contains(&fps) {
-                    return Err("cadence attendue entre 0,1 et 30 images par seconde".into());
+                    return Err(tr("cadence attendue entre 0,1 et 30 images par seconde").into());
                 }
                 self.cfg.dashboard.fps = fps as f32;
             }
             Request::SetRotation(degrees) => {
                 if !matches!(degrees, 0 | 180) {
-                    return Err("rotation : seules 0 et 180 sont prises en charge".into());
+                    return Err(tr("rotation : seules 0 et 180 sont prises en charge").into());
                 }
                 if self.cfg.dashboard.rotation != degrees {
                     self.cfg.dashboard.rotation = degrees;
@@ -726,9 +739,9 @@ impl Engine {
                 for w in widgets {
                     let w = w.to_ascii_lowercase();
                     if !WIDGETS.contains(&w.as_str()) {
-                        return Err(format!(
-                            "panneau « {w} » inconnu (attendu : {})",
-                            WIDGETS.join(", ")
+                        return Err(trf(
+                            "panneau « {name} » inconnu (attendu : {expected})",
+                            &[("name", &w), ("expected", &WIDGETS.join(", "))],
                         ));
                     }
                     if !clean.contains(&w) {
@@ -749,7 +762,7 @@ impl Engine {
                 new.folders.retain(|f| !f.trim().is_empty());
                 new.folders.dedup();
                 if let Some(relative) = new.folders.iter().find(|f| !Path::new(f).is_absolute()) {
-                    return Err(format!("chemin absolu attendu : {relative}"));
+                    return Err(trf("chemin absolu attendu : {path}", &[("path", relative)]));
                 }
                 self.cfg.slideshow = new;
                 if self.cfg.daemon.mode == Mode::Slideshow {
@@ -758,13 +771,13 @@ impl Engine {
             }
             Request::SlideshowNext => match &mut self.slideshow {
                 Some(show) => show.skip(),
-                None => return Err("le diaporama n'est pas affiché".into()),
+                None => return Err(tr("le diaporama n'est pas affiché").into()),
             },
             Request::SetClock(clock) => self.cfg.clock = clock,
             Request::SetNowPlaying { player } => {
                 let player = player.trim().to_owned();
                 if player.contains(char::is_whitespace) {
-                    return Err("lecteur : un nom sans espace est attendu (ex. spotify)".into());
+                    return Err(tr("lecteur : un nom sans espace est attendu (ex. spotify)").into());
                 }
                 if player != self.cfg.now_playing.player {
                     self.cfg.now_playing.player = player;
@@ -778,7 +791,7 @@ impl Engine {
                 client_secret,
             } => {
                 if self.importer.is_running() {
-                    return Err("un import est en cours".into());
+                    return Err(tr("un import est en cours").into());
                 }
                 self.cfg.google.client_id = client_id.trim().to_owned();
                 self.cfg.google.client_secret = client_secret.trim().to_owned();
@@ -809,7 +822,7 @@ impl Engine {
             }
             Request::GoogleClearCache => {
                 if self.importer.is_running() {
-                    return Err("un import est en cours".into());
+                    return Err(tr("un import est en cours").into());
                 }
                 google::clear_cache(&self.google.cache_root).map_err(|e| e.to_string())?;
                 self.google_cached = 0;
@@ -822,7 +835,7 @@ impl Engine {
                 let path = self
                     .config_path
                     .as_ref()
-                    .ok_or("aucun fichier de configuration")?;
+                    .ok_or(tr("aucun fichier de configuration"))?;
                 return config::save(path, &self.cfg).map_err(|e| format!("{e:#}"));
             }
             Request::ReloadConfig => return self.reload(),
@@ -835,7 +848,7 @@ impl Engine {
         let path = self
             .config_path
             .clone()
-            .ok_or("aucun fichier de configuration")?;
+            .ok_or(tr("aucun fichier de configuration"))?;
         let mut new = if path.exists() {
             config::load(Some(&path)).map_err(|e| format!("{e:#}"))?
         } else {
@@ -861,7 +874,10 @@ impl Engine {
         if let Err(e) = self.enter_mode(mode) {
             self.cfg.daemon.mode = Mode::Dashboard;
             let _ = self.enter_mode(Mode::Dashboard);
-            return Err(format!("mode « {mode} » inutilisable : {e}"));
+            return Err(trf(
+                "mode « {mode} » inutilisable : {error}",
+                &[("mode", &mode), ("error", &e)],
+            ));
         }
         http_result
     }

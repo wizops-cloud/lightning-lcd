@@ -8,6 +8,7 @@ use std::time::Instant;
 
 use adw::prelude::*;
 use gtk::{gdk, gio};
+use lightning_i18n::{tr, trf};
 use lightning_ipc::{Fit, Mode, OnExit};
 
 use crate::remote::DaemonState;
@@ -15,141 +16,163 @@ use crate::remote::DaemonState;
 pub const APP_ID: &str = "cloud.wizops.Lightning";
 
 /// Pages de la navigation latérale : `(nom, titre, icône, sous-titre)`.
-pub const PAGES: [(&str, &str, &str, &str); 6] = [
-    (
-        "accueil",
-        "Accueil",
-        "go-home-symbolic",
-        "Ce que l'écran affiche en ce moment",
-    ),
-    (
-        "contenu",
-        "Contenu",
-        "image-x-generic-symbolic",
-        "Choisissez ce que l'écran affiche",
-    ),
-    (
-        "diaporama",
-        "Diaporama",
-        "folder-pictures-symbolic",
-        "Vos photos, depuis ce PC ou Google Photos",
-    ),
-    (
-        "dashboard",
-        "Tableau de bord",
-        "view-grid-symbolic",
-        "Panneaux affichés et leur ordre",
-    ),
-    (
-        "reglages",
-        "Réglages",
-        "preferences-system-symbolic",
-        "Écran, arrêt et aperçu dans un navigateur",
-    ),
-    (
-        "service",
-        "Service",
-        "system-run-symbolic",
-        "Le programme qui fait tourner l'écran en arrière-plan",
-    ),
-];
+pub fn pages() -> [(&'static str, &'static str, &'static str, &'static str); 6] {
+    [
+        (
+            "accueil",
+            tr("Accueil"),
+            "go-home-symbolic",
+            tr("Ce que l'écran affiche en ce moment"),
+        ),
+        (
+            "contenu",
+            tr("Contenu"),
+            "image-x-generic-symbolic",
+            tr("Choisissez ce que l'écran affiche"),
+        ),
+        (
+            "diaporama",
+            tr("Diaporama"),
+            "folder-pictures-symbolic",
+            tr("Vos photos, depuis ce PC ou Google Photos"),
+        ),
+        (
+            "dashboard",
+            tr("Tableau de bord"),
+            "view-grid-symbolic",
+            tr("Panneaux affichés et leur ordre"),
+        ),
+        (
+            "reglages",
+            tr("Réglages"),
+            "preferences-system-symbolic",
+            tr("Écran, arrêt et aperçu dans un navigateur"),
+        ),
+        (
+            "service",
+            tr("Service"),
+            "system-run-symbolic",
+            tr("Le programme qui fait tourner l'écran en arrière-plan"),
+        ),
+    ]
+}
 
 /// Contenus proposés : `(mode, titre, icône, description)`.
-pub const MODES: [(Mode, &str, &str, &str); 8] = [
-    (
-        Mode::Dashboard,
-        "Tableau de bord",
-        "view-grid-symbolic",
-        "État du PC en temps réel",
-    ),
-    (
-        Mode::Image,
-        "Image",
-        "image-x-generic-symbolic",
-        "Une image fixe",
-    ),
-    (
-        Mode::Video,
-        "Vidéo",
-        "video-x-generic-symbolic",
-        "Une vidéo, en boucle ou non",
-    ),
-    (
-        Mode::Slideshow,
-        "Diaporama",
-        "folder-pictures-symbolic",
-        "Vos photos qui défilent",
-    ),
-    (
-        Mode::Clock,
-        "Horloge",
-        "preferences-system-time-symbolic",
-        "L'heure en grand, lisible de loin",
-    ),
-    (
-        Mode::NowPlaying,
-        "En cours de lecture",
-        "audio-x-generic-symbolic",
-        "Le morceau joué sur ce PC",
-    ),
-    (
-        Mode::Color,
-        "Couleur",
-        "color-select-symbolic",
-        "Une couleur unie",
-    ),
-    (
-        Mode::MsiAnimation,
-        "Animation d'origine",
-        "weather-storm-symbolic",
-        "L'écran reprend son animation",
-    ),
-];
+pub fn modes() -> [(Mode, &'static str, &'static str, &'static str); 8] {
+    [
+        (
+            Mode::Dashboard,
+            tr("Tableau de bord"),
+            "view-grid-symbolic",
+            tr("État du PC en temps réel"),
+        ),
+        (
+            Mode::Image,
+            tr("Image"),
+            "image-x-generic-symbolic",
+            tr("Une image fixe"),
+        ),
+        (
+            Mode::Video,
+            tr("Vidéo"),
+            "video-x-generic-symbolic",
+            tr("Une vidéo, en boucle ou non"),
+        ),
+        (
+            Mode::Slideshow,
+            tr("Diaporama"),
+            "folder-pictures-symbolic",
+            tr("Vos photos qui défilent"),
+        ),
+        (
+            Mode::Clock,
+            tr("Horloge"),
+            "preferences-system-time-symbolic",
+            tr("L'heure en grand, lisible de loin"),
+        ),
+        (
+            Mode::NowPlaying,
+            tr("En cours de lecture"),
+            "audio-x-generic-symbolic",
+            tr("Le morceau joué sur ce PC"),
+        ),
+        (
+            Mode::Color,
+            tr("Couleur"),
+            "color-select-symbolic",
+            tr("Une couleur unie"),
+        ),
+        (
+            Mode::MsiAnimation,
+            tr("Animation d'origine"),
+            "weather-storm-symbolic",
+            tr("L'écran reprend son animation"),
+        ),
+    ]
+}
 
 /// Panneaux du tableau de bord : `(nom, titre, description, rangée du haut)`.
-pub const PANELS: [(&str, &str, &str, bool); 5] = [
-    (
-        "gpu",
-        "Carte graphique",
-        "Charge, température, mémoire vidéo, puissance",
-        true,
-    ),
-    (
-        "cpu",
-        "Processeur",
-        "Charge globale et par cœur, température, fréquence",
-        true,
-    ),
-    (
-        "memory",
-        "Mémoire",
-        "Mémoire vive et espace d'échange utilisés",
-        false,
-    ),
-    (
-        "disks",
-        "Disques",
-        "Occupation des points de montage",
-        false,
-    ),
-    ("network", "Réseau", "Débits descendant et montant", false),
-];
+pub fn panels() -> [(&'static str, &'static str, &'static str, bool); 5] {
+    [
+        (
+            "gpu",
+            tr("Carte graphique"),
+            tr("Charge, température, mémoire vidéo, puissance"),
+            true,
+        ),
+        (
+            "cpu",
+            tr("Processeur"),
+            tr("Charge globale et par cœur, température, fréquence"),
+            true,
+        ),
+        (
+            "memory",
+            tr("Mémoire"),
+            tr("Mémoire vive et espace d'échange utilisés"),
+            false,
+        ),
+        (
+            "disks",
+            tr("Disques"),
+            tr("Occupation des points de montage"),
+            false,
+        ),
+        (
+            "network",
+            tr("Réseau"),
+            tr("Débits descendant et montant"),
+            false,
+        ),
+    ]
+}
 
-pub const ORDERS: [(&str, &str); 2] = [("random", "Aléatoire"), ("chronological", "Chronologique")];
-pub const SLIDE_FITS: [(&str, &str); 2] = [
-    ("contain", "Photo entière sur fond flou"),
-    ("cover", "Remplir l'écran (rogner)"),
-];
-pub const ON_EXIT: [(OnExit, &str); 3] = [
-    (OnExit::Keep, "Conserver la dernière image"),
-    (OnExit::Blank, "Afficher un écran noir"),
-    (OnExit::Restore, "Rendre l'écran à son animation"),
-];
-pub const FITS: [(Fit, &str); 3] = [
-    (Fit::Cover, "Remplir (rogner)"),
-    (Fit::Contain, "Adapter (bandes noires)"),
-    (Fit::Stretch, "Étirer"),
-];
+pub fn orders() -> [(&'static str, &'static str); 2] {
+    [
+        ("random", tr("Aléatoire")),
+        ("chronological", tr("Chronologique")),
+    ]
+}
+pub fn slide_fits() -> [(&'static str, &'static str); 2] {
+    [
+        ("contain", tr("Photo entière sur fond flou")),
+        ("cover", tr("Remplir l'écran (rogner)")),
+    ]
+}
+pub fn on_exit_choices() -> [(OnExit, &'static str); 3] {
+    [
+        (OnExit::Keep, tr("Conserver la dernière image")),
+        (OnExit::Blank, tr("Afficher un écran noir")),
+        (OnExit::Restore, tr("Rendre l'écran à son animation")),
+    ]
+}
+pub fn fits() -> [(Fit, &'static str); 3] {
+    [
+        (Fit::Cover, tr("Remplir (rogner)")),
+        (Fit::Contain, tr("Adapter (bandes noires)")),
+        (Fit::Stretch, tr("Étirer")),
+    ]
+}
 /// Couleurs proposées d'un clic.
 pub const SWATCHES: [&str; 8] = [
     "000000", "101418", "f2b441", "ff8a4c", "f25454", "b289ff", "54a6ff", "2dd4bf",
@@ -324,11 +347,11 @@ impl Ui {
 
     /// Affiche une page de la navigation.
     pub fn show_page(&self, name: &str) {
-        let Some(index) = PAGES.iter().position(|(n, ..)| *n == name) else {
+        let Some(index) = pages().iter().position(|(n, ..)| *n == name) else {
             return;
         };
         self.pages.set_visible_child_name(name);
-        self.content_page.set_title(PAGES[index].1);
+        self.content_page.set_title(pages()[index].1);
         if let Some(row) = self.nav_list.row_at_index(index as i32)
             && self.nav_list.selected_row().as_ref() != Some(&row)
         {
@@ -360,8 +383,8 @@ fn section(title: &str, hint: Option<&str>) -> gtk::Box {
 
 /// Page défilante : titre, sous-titre, puis le contenu, dans une colonne bornée.
 fn page(name: &str, children: &[&gtk::Widget]) -> gtk::ScrolledWindow {
-    let (_, title, _, subtitle) = PAGES
-        .iter()
+    let (_, title, _, subtitle) = pages()
+        .into_iter()
         .find(|(n, ..)| *n == name)
         .expect("page connue");
     let column = gtk::Box::new(gtk::Orientation::Vertical, 22);
@@ -542,7 +565,7 @@ fn card(mode: Mode, title: &str, icon: &str, description: &str, large: bool) -> 
 fn cards(large: bool) -> (gtk::FlowBox, Vec<Card>) {
     // Une seule grande carte par ligne reste possible en fenêtre étroite.
     let flow = if large { flow(1, 3) } else { flow(2, 6) };
-    let cards: Vec<Card> = MODES
+    let cards: Vec<Card> = modes()
         .iter()
         .map(|(mode, title, icon, description)| card(*mode, title, icon, description, large))
         .collect();
@@ -558,13 +581,13 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     let hero_picture = gtk::Picture::new();
     hero_picture.set_content_fit(gtk::ContentFit::Cover);
     hero_picture.set_can_shrink(true);
-    accessible(&hero_picture, "Aperçu en direct de l'écran");
+    accessible(&hero_picture, tr("Aperçu en direct de l'écran"));
     let hero_empty = gtk::Box::new(gtk::Orientation::Vertical, 10);
     hero_empty.add_css_class("hero-empty");
     hero_empty.set_valign(gtk::Align::Center);
     hero_empty.set_halign(gtk::Align::Center);
     hero_empty.append(&gtk::Image::from_icon_name("video-display-symbolic"));
-    hero_empty.append(&gtk::Label::new(Some("En attente d'une image…")));
+    hero_empty.append(&gtk::Label::new(Some(tr("En attente d'une image…"))));
     // L'image donne la hauteur selon la largeur (16:10) ; avant la première
     // image du démon, une texture sombre aux mêmes proportions tient la place.
     let blank = gdk::MemoryTexture::new(
@@ -593,22 +616,26 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     hero_clamp.set_margin_top(6);
     hero_clamp.set_margin_bottom(10);
 
-    let chip_lcd = Chip::new(None, true, "État de la liaison avec l'écran");
-    let chip_mode = Chip::new(Some("image-x-generic-symbolic"), false, "Contenu affiché");
+    let chip_lcd = Chip::new(None, true, tr("État de la liaison avec l'écran"));
+    let chip_mode = Chip::new(
+        Some("image-x-generic-symbolic"),
+        false,
+        tr("Contenu affiché"),
+    );
     let chip_fps = Chip::new(
         Some("media-playback-start-symbolic"),
         false,
-        "Images envoyées par seconde",
+        tr("Images envoyées par seconde"),
     );
     let chip_render = Chip::new(
         Some("preferences-system-time-symbolic"),
         false,
-        "Temps de rendu de la dernière image",
+        tr("Temps de rendu de la dernière image"),
     );
     let chip_brightness = Chip::new(
         Some("display-brightness-symbolic"),
         false,
-        "Luminosité confirmée par l'écran",
+        tr("Luminosité confirmée par l'écran"),
     );
     let chips = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     chips.set_halign(gtk::Align::Center);
@@ -636,7 +663,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     let quick_scale = gtk::Scale::new(gtk::Orientation::Horizontal, Some(&brightness));
     quick_scale.set_hexpand(true);
     quick_scale.set_draw_value(false);
-    accessible(&quick_scale, "Luminosité de l'écran");
+    accessible(&quick_scale, tr("Luminosité de l'écran"));
     let brightness_caption = gtk::Label::new(Some("—"));
     brightness_caption.add_css_class("numeric");
     brightness_caption.set_width_chars(6);
@@ -644,7 +671,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     let quick = gtk::Box::new(gtk::Orientation::Horizontal, 12);
     quick.add_css_class("quick-panel");
     quick.append(&gtk::Image::from_icon_name("display-brightness-symbolic"));
-    let quick_title = gtk::Label::new(Some("Luminosité"));
+    let quick_title = gtk::Label::new(Some(tr("Luminosité")));
     quick_title.add_css_class("heading");
     quick.append(&quick_title);
     quick.append(&quick_scale);
@@ -655,7 +682,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
         &[
             hero_clamp.upcast_ref(),
             chips.upcast_ref(),
-            section("Afficher", Some("Changez de contenu d'un clic")).upcast_ref(),
+            section(tr("Afficher"), Some(tr("Changez de contenu d'un clic"))).upcast_ref(),
             hero_flow.upcast_ref(),
             quick.upcast_ref(),
         ],
@@ -669,21 +696,21 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     details.set_interpolate_size(true);
 
     let dashboard_hint = adw::ActionRow::builder()
-        .title("Panneaux et ordre")
-        .subtitle("Réglables dans la page « Tableau de bord »")
+        .title(tr("Panneaux et ordre"))
+        .subtitle(tr("Réglables dans la page « Tableau de bord »"))
         .build();
     details.add_named(&group(&[dashboard_hint.upcast_ref()]), Some("dashboard"));
 
     let image_row = adw::ActionRow::builder()
-        .title("Fichier")
-        .subtitle("Aucun fichier choisi")
+        .title(tr("Fichier"))
+        .subtitle(tr("Aucun fichier choisi"))
         .build();
-    let image_button = gtk::Button::with_label("Choisir une image…");
+    let image_button = gtk::Button::with_label(tr("Choisir une image…"));
     image_button.set_valign(gtk::Align::Center);
     image_row.add_suffix(&image_button);
     let image_fit = adw::ComboRow::builder()
-        .title("Ajustement")
-        .model(&string_list(FITS.map(|(_, label)| label)))
+        .title(tr("Ajustement"))
+        .model(&string_list(fits().map(|(_, label)| label)))
         .build();
     details.add_named(
         &group(&[image_row.upcast_ref(), image_fit.upcast_ref()]),
@@ -691,34 +718,36 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     );
 
     let video_row = adw::ActionRow::builder()
-        .title("Fichier")
-        .subtitle("Aucun fichier choisi")
+        .title(tr("Fichier"))
+        .subtitle(tr("Aucun fichier choisi"))
         .build();
-    let video_button = gtk::Button::with_label("Choisir une vidéo…");
+    let video_button = gtk::Button::with_label(tr("Choisir une vidéo…"));
     video_button.set_valign(gtk::Align::Center);
     video_row.add_suffix(&video_button);
-    let video_loop = adw::SwitchRow::builder().title("Lire en boucle").build();
+    let video_loop = adw::SwitchRow::builder()
+        .title(tr("Lire en boucle"))
+        .build();
     details.add_named(
         &group(&[video_row.upcast_ref(), video_loop.upcast_ref()]),
         Some("video"),
     );
 
     let slideshow_summary = adw::ActionRow::builder()
-        .title("Photos")
+        .title(tr("Photos"))
         .subtitle("—")
         .build();
-    let slideshow_open = gtk::Button::with_label("Régler le diaporama");
+    let slideshow_open = gtk::Button::with_label(tr("Régler le diaporama"));
     slideshow_open.set_valign(gtk::Align::Center);
     slideshow_summary.add_suffix(&slideshow_open);
     details.add_named(&group(&[slideshow_summary.upcast_ref()]), Some("slideshow"));
 
     let clock_seconds = adw::SwitchRow::builder()
-        .title("Secondes")
-        .subtitle("Affichées en plus petit à côté de l'heure")
+        .title(tr("Secondes"))
+        .subtitle(tr("Affichées en plus petit à côté de l'heure"))
         .build();
     let clock_date = adw::SwitchRow::builder()
-        .title("Date")
-        .subtitle("Jour, mois et année sous l'heure")
+        .title(tr("Date"))
+        .subtitle(tr("Jour, mois et année sous l'heure"))
         .build();
     details.add_named(
         &group(&[clock_seconds.upcast_ref(), clock_date.upcast_ref()]),
@@ -726,12 +755,12 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     );
 
     let now_playing_row = adw::ActionRow::builder()
-        .title("Morceau")
-        .subtitle("Aucune lecture en cours")
+        .title(tr("Morceau"))
+        .subtitle(tr("Aucune lecture en cours"))
         .build();
     now_playing_row.add_css_class("property");
     let now_playing_player = adw::EntryRow::builder()
-        .title("Lecteur préféré (ex. spotify ; vide = celui qui joue)")
+        .title(tr("Lecteur préféré (ex. spotify ; vide = celui qui joue)"))
         .show_apply_button(true)
         .build();
     details.add_named(
@@ -745,13 +774,13 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     let color = gtk::ColorDialogButton::new(Some(
         gtk::ColorDialog::builder()
             .with_alpha(false)
-            .title("Couleur de l'écran")
+            .title(tr("Couleur de l'écran"))
             .build(),
     ));
     color.set_valign(gtk::Align::Center);
     let color_row = adw::ActionRow::builder()
-        .title("Couleur")
-        .subtitle("Choisissez une teinte ou ouvrez le sélecteur")
+        .title(tr("Couleur"))
+        .subtitle(tr("Choisissez une teinte ou ouvrez le sélecteur"))
         .build();
     let swatch_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
     swatch_box.set_valign(gtk::Align::Center);
@@ -761,7 +790,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
             let button = gtk::Button::new();
             button.add_css_class("swatch");
             button.set_tooltip_text(Some(&format!("#{hex}")));
-            accessible(&button, &format!("Couleur #{hex}"));
+            accessible(&button, &trf("Couleur #{hex}", &[("hex", hex)]));
             let (r, g, b) = (
                 u8::from_str_radix(&hex[0..2], 16).unwrap_or(0),
                 u8::from_str_radix(&hex[2..4], 16).unwrap_or(0),
@@ -791,7 +820,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
             ((*hex).to_owned(), button)
         })
         .collect();
-    let swatch_row = adw::ActionRow::builder().title("Teintes").build();
+    let swatch_row = adw::ActionRow::builder().title(tr("Teintes")).build();
     swatch_row.add_suffix(&swatch_box);
     color_row.add_suffix(&color);
     details.add_named(
@@ -800,10 +829,9 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     );
 
     let msi_hint = adw::ActionRow::builder()
-        .title("Écran rendu à son firmware")
-        .subtitle(
-            "L'animation d'origine reprend ; choisissez un autre contenu pour reprendre la main",
-        )
+        .title(tr("Écran rendu à son firmware"))
+        .subtitle(tr("L'animation d'origine reprend ; choisissez un autre \
+                contenu pour reprendre la main"))
         .build();
     details.add_named(&group(&[msi_hint.upcast_ref()]), Some("msi_animation"));
 
@@ -811,7 +839,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
         "contenu",
         &[
             content_flow.upcast_ref(),
-            section("Options", None).upcast_ref(),
+            section(tr("Options"), None).upcast_ref(),
             details.upcast_ref(),
         ],
     );
@@ -826,25 +854,26 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     add_body.set_margin_top(28);
     add_body.set_margin_bottom(28);
     add_body.append(&gtk::Image::from_icon_name("list-add-symbolic"));
-    add_body.append(&gtk::Label::new(Some("Ajouter un dossier")));
+    add_body.append(&gtk::Label::new(Some(tr("Ajouter un dossier"))));
     add_folder.set_child(Some(&add_body));
-    add_folder.set_tooltip_text(Some("Ajouter un dossier de photos au diaporama"));
+    add_folder.set_tooltip_text(Some(tr("Ajouter un dossier de photos au diaporama")));
 
     let google_icon = gtk::Image::from_icon_name("emblem-photos-symbolic");
     google_icon.add_css_class("feature-icon");
     google_icon.set_valign(gtk::Align::Start);
-    let google_title = label("Vos photos Google", &["feature-title"]);
+    let google_title = label(tr("Vos photos Google"), &["feature-title"]);
     let google_text = label(
-        "Choisissez des photos ou des albums dans Google Photos : ils sont copiés sur ce PC et \
-         rejoignent le diaporama. Rien n'est envoyé ailleurs que chez Google.",
+        tr("Choisissez des photos ou des albums \
+            dans Google Photos : ils sont copiés sur ce PC et rejoignent le diaporama. \
+            Rien n'est envoyé ailleurs que chez Google."),
         &["section-hint"],
     );
     let google_state = label("—", &["feature-state"]);
     let google_cache = label("—", &["section-hint"]);
-    let google_button = gtk::Button::with_label("Choisir des photos Google…");
+    let google_button = gtk::Button::with_label(tr("Choisir des photos Google…"));
     google_button.add_css_class("suggested-action");
     google_button.add_css_class("pill");
-    let google_clear = gtk::Button::with_label("Vider le cache");
+    let google_clear = gtk::Button::with_label(tr("Vider le cache"));
     google_clear.add_css_class("pill");
     // Les deux boutons passent l'un sous l'autre quand la place manque.
     let google_actions = gtk::FlowBox::builder()
@@ -871,18 +900,21 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     google_card.append(&google_column);
 
     let google_creds = adw::ExpanderRow::builder()
-        .title("Identifiants OAuth")
-        .subtitle("Client « application de bureau » créé dans votre Google Cloud Console")
+        .title(tr("Identifiants OAuth"))
+        .subtitle(tr("Client « application de bureau » \
+            créé dans votre Google Cloud Console"))
         .build();
-    let google_id = adw::EntryRow::builder().title("Identifiant client").build();
+    let google_id = adw::EntryRow::builder()
+        .title(tr("Identifiant client"))
+        .build();
     let google_secret = adw::PasswordEntryRow::builder()
-        .title("Secret client")
+        .title(tr("Secret client"))
         .build();
-    let google_save = gtk::Button::with_label("Enregistrer");
+    let google_save = gtk::Button::with_label(tr("Enregistrer"));
     google_save.set_valign(gtk::Align::Center);
     let google_save_row = adw::ActionRow::builder()
-        .title("Enregistrer les identifiants")
-        .subtitle("Conservés dans ~/.config/lightning/config.toml")
+        .title(tr("Enregistrer les identifiants"))
+        .subtitle(tr("Conservés dans ~/.config/lightning/config.toml"))
         .build();
     google_save_row.add_suffix(&google_save);
     google_creds.add_row(&google_id);
@@ -890,39 +922,39 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     google_creds.add_row(&google_save_row);
 
     let slide_interval = adw::SpinRow::with_range(1.0, 3600.0, 1.0);
-    slide_interval.set_title("Durée par photo");
-    slide_interval.set_subtitle("En secondes");
+    slide_interval.set_title(tr("Durée par photo"));
+    slide_interval.set_subtitle(tr("En secondes"));
     let slide_order = adw::ComboRow::builder()
-        .title("Ordre")
-        .subtitle("L'ordre chronologique suit la date de prise de vue")
-        .model(&string_list(ORDERS.map(|(_, label)| label)))
+        .title(tr("Ordre"))
+        .subtitle(tr("L'ordre chronologique suit la date de prise de vue"))
+        .model(&string_list(orders().map(|(_, label)| label)))
         .build();
     let slide_fit = adw::ComboRow::builder()
-        .title("Ajustement")
-        .model(&string_list(SLIDE_FITS.map(|(_, label)| label)))
+        .title(tr("Ajustement"))
+        .model(&string_list(slide_fits().map(|(_, label)| label)))
         .build();
     let slide_fade = adw::SwitchRow::builder()
-        .title("Fondu enchaîné")
-        .subtitle("Transition douce entre deux photos")
+        .title(tr("Fondu enchaîné"))
+        .subtitle(tr("Transition douce entre deux photos"))
         .build();
     let slide_overlay = adw::SwitchRow::builder()
-        .title("Légende")
-        .subtitle("Date de la photo et nom de son dossier")
+        .title(tr("Légende"))
+        .subtitle(tr("Date de la photo et nom de son dossier"))
         .build();
-    let slide_clock = adw::SwitchRow::builder().title("Horloge").build();
+    let slide_clock = adw::SwitchRow::builder().title(tr("Horloge")).build();
 
     let page_slideshow = page(
         "diaporama",
         &[
             section(
-                "Dossiers",
-                Some("Parcourus avec leurs sous-dossiers (JPEG, PNG, WebP)"),
+                tr("Dossiers"),
+                Some(tr("Parcourus avec leurs sous-dossiers (JPEG, PNG, WebP)")),
             )
             .upcast_ref(),
             folders_flow.upcast_ref(),
             google_card.upcast_ref(),
             group(&[google_creds.upcast_ref()]).upcast_ref(),
-            section("Lecture", None).upcast_ref(),
+            section(tr("Lecture"), None).upcast_ref(),
             group(&[
                 slide_interval.upcast_ref(),
                 slide_order.upcast_ref(),
@@ -938,7 +970,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     // ---------------------------------------------------- tableau de bord
     let schematic = gtk::Box::new(gtk::Orientation::Vertical, 8);
     schematic.add_css_class("schematic");
-    accessible(&schematic, "Schéma de la disposition des panneaux");
+    accessible(&schematic, tr("Schéma de la disposition des panneaux"));
     let schematic_clamp = adw::Clamp::builder()
         .maximum_size(560)
         .child(&schematic)
@@ -950,15 +982,15 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
         "dashboard",
         &[
             section(
-                "Disposition",
-                Some("Aperçu de l'ordre des panneaux sur l'écran"),
+                tr("Disposition"),
+                Some(tr("Aperçu de l'ordre des panneaux sur l'écran")),
             )
             .upcast_ref(),
             schematic_clamp.upcast_ref(),
             section(
-                "Panneaux",
+                tr("Panneaux"),
                 Some(
-                    "Activez-les, puis glissez-les ou utilisez les flèches ; l'ordre s'applique au sein de chaque rangée",
+                    tr("Activez-les, puis glissez-les ou utilisez les flèches ; l'ordre s'applique au sein de chaque rangée"),
                 ),
             )
             .upcast_ref(),
@@ -974,54 +1006,55 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     settings_scale.set_digits(0);
     settings_scale.set_value_pos(gtk::PositionType::Right);
     settings_scale.set_valign(gtk::Align::Center);
-    accessible(&settings_scale, "Luminosité de l'écran");
-    let brightness_row = adw::ActionRow::builder().title("Luminosité").build();
+    accessible(&settings_scale, tr("Luminosité de l'écran"));
+    let brightness_row = adw::ActionRow::builder().title(tr("Luminosité")).build();
     brightness_row.add_suffix(&settings_scale);
     let rotation = adw::ComboRow::builder()
-        .title("Orientation")
-        .subtitle("Retourne l'image si l'écran est monté tête en bas")
-        .model(&string_list(["Normale", "Retournée (180°)"]))
+        .title(tr("Orientation"))
+        .subtitle(tr("Retourne l'image si l'écran est monté tête en bas"))
+        .model(&string_list([tr("Normale"), tr("Retournée (180°)")]))
         .build();
     let fps = adw::SpinRow::with_range(0.5, 30.0, 0.5);
-    fps.set_title("Images par seconde");
-    fps.set_subtitle("Cadence de rafraîchissement du tableau de bord");
+    fps.set_title(tr("Images par seconde"));
+    fps.set_subtitle(tr("Cadence de rafraîchissement du tableau de bord"));
     fps.set_digits(1);
-    let lcd_row = info_row("Écran");
-    let stats_row = info_row("Performances");
+    let lcd_row = info_row(tr("Écran"));
+    let stats_row = info_row(tr("Performances"));
     let on_exit = adw::ComboRow::builder()
-        .title("À l'arrêt du service")
-        .subtitle("Ce que l'écran affiche une fois le service arrêté")
-        .model(&string_list(ON_EXIT.map(|(_, label)| label)))
+        .title(tr("À l'arrêt du service"))
+        .subtitle(tr("Ce que l'écran affiche une fois le service arrêté"))
+        .model(&string_list(on_exit_choices().map(|(_, label)| label)))
         .build();
     let http = adw::SwitchRow::builder()
-        .title("Aperçu HTTP")
-        .subtitle("Page, flux MJPEG, dernière image et état JSON — sans authentification")
+        .title(tr("Aperçu HTTP"))
+        .subtitle(tr("Page, flux MJPEG, dernière image et état JSON — sans \
+                authentification"))
         .build();
     let http_addr = adw::EntryRow::builder()
-        .title("Adresse d'écoute (IP:port)")
+        .title(tr("Adresse d'écoute (IP:port)"))
         .show_apply_button(true)
         .build();
     let browser_button = gtk::Button::from_icon_name("web-browser-symbolic");
-    browser_button.set_tooltip_text(Some("Ouvrir l'aperçu dans le navigateur"));
-    accessible(&browser_button, "Ouvrir l'aperçu dans le navigateur");
+    browser_button.set_tooltip_text(Some(tr("Ouvrir l'aperçu dans le navigateur")));
+    accessible(&browser_button, tr("Ouvrir l'aperçu dans le navigateur"));
     browser_button.set_valign(gtk::Align::Center);
     browser_button.add_css_class("flat");
     http_addr.add_suffix(&browser_button);
     let page_settings = page(
         "reglages",
         &[
-            section("Écran", None).upcast_ref(),
+            section(tr("Écran"), None).upcast_ref(),
             group(&[
                 brightness_row.upcast_ref(),
                 rotation.upcast_ref(),
                 fps.upcast_ref(),
             ])
             .upcast_ref(),
-            section("État", None).upcast_ref(),
+            section(tr("État"), None).upcast_ref(),
             group(&[lcd_row.upcast_ref(), stats_row.upcast_ref()]).upcast_ref(),
-            section("Arrêt", None).upcast_ref(),
+            section(tr("Arrêt"), None).upcast_ref(),
             group(&[on_exit.upcast_ref()]).upcast_ref(),
-            section("Aperçu dans un navigateur", None).upcast_ref(),
+            section(tr("Aperçu dans un navigateur"), None).upcast_ref(),
             group(&[http.upcast_ref(), http_addr.upcast_ref()]).upcast_ref(),
         ],
     );
@@ -1038,7 +1071,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     service_hint.add_css_class("section-hint");
     service_hint.set_wrap(true);
     service_hint.set_justify(gtk::Justification::Center);
-    let restart_button = gtk::Button::with_label("Redémarrer le service");
+    let restart_button = gtk::Button::with_label(tr("Redémarrer le service"));
     restart_button.add_css_class("pill");
     restart_button.set_halign(gtk::Align::Center);
     let service_head = gtk::Box::new(gtk::Orientation::Vertical, 10);
@@ -1048,13 +1081,13 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     service_head.append(&service_hint);
     service_head.append(&restart_button);
     let service_active = adw::SwitchRow::builder()
-        .title("Service en marche")
-        .subtitle("Arrêter le service libère l'écran")
+        .title(tr("Service en marche"))
+        .subtitle(tr("Arrêter le service libère l'écran"))
         .build();
     let service_enabled = adw::SwitchRow::builder()
-        .title("Lancer à l'ouverture de session")
+        .title(tr("Lancer à l'ouverture de session"))
         .build();
-    let version_row = info_row("Version du démon");
+    let version_row = info_row(tr("Version du démon"));
     let page_service = page(
         "service",
         &[
@@ -1089,7 +1122,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     content_view.add_top_bar(&content_header);
     content_view.set_content(Some(&pages));
     let content_page = adw::NavigationPage::builder()
-        .title("Accueil")
+        .title(tr("Accueil"))
         .tag("content")
         .child(&content_view)
         .build();
@@ -1098,8 +1131,8 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     nav_list.add_css_class("navigation-sidebar");
     nav_list.add_css_class("nav-list");
     nav_list.set_selection_mode(gtk::SelectionMode::Single);
-    accessible(&nav_list, "Pages");
-    for (_, title, icon, _) in PAGES {
+    accessible(&nav_list, tr("Pages"));
+    for (_, title, icon, _) in self::pages() {
         let row = gtk::Box::new(gtk::Orientation::Horizontal, 12);
         row.set_margin_top(7);
         row.set_margin_bottom(7);
@@ -1118,7 +1151,7 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     let sidebar_mode = gtk::Label::new(Some("—"));
     sidebar_mode.add_css_class("caption");
     sidebar_mode.set_xalign(0.0);
-    let sidebar_caption = gtk::Label::new(Some("Écran"));
+    let sidebar_caption = gtk::Label::new(Some(tr("Écran")));
     sidebar_caption.add_css_class("caption");
     sidebar_caption.set_xalign(0.0);
     let sidebar_status = gtk::Box::new(gtk::Orientation::Vertical, 1);
@@ -1140,12 +1173,12 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     sidebar_body.append(&sidebar_status);
 
     let menu = gio::Menu::new();
-    menu.append(Some("À propos de Lightning"), Some("app.about"));
-    menu.append(Some("Quitter"), Some("app.quit"));
+    menu.append(Some(tr("À propos de Lightning")), Some("app.about"));
+    menu.append(Some(tr("Quitter")), Some("app.quit"));
     let menu_button = gtk::MenuButton::builder()
         .icon_name("open-menu-symbolic")
         .menu_model(&menu)
-        .tooltip_text("Menu principal")
+        .tooltip_text(tr("Menu principal"))
         .primary(true)
         .build();
     let brand_icon = gtk::Image::from_icon_name(APP_ID);
@@ -1174,14 +1207,15 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     split.set_content(Some(&content_page));
 
     // ---------------------------------------------------- états et fenêtre
-    let offline_button = gtk::Button::with_label("Démarrer le service");
+    let offline_button = gtk::Button::with_label(tr("Démarrer le service"));
     offline_button.add_css_class("pill");
     offline_button.add_css_class("suggested-action");
     offline_button.set_halign(gtk::Align::Center);
     let offline = adw::StatusPage::builder()
         .icon_name(APP_ID)
-        .title("Le service Lightning est arrêté")
-        .description("L'écran de la carte graphique n'est pas piloté pour l'instant.")
+        .title(tr("Le service Lightning est arrêté"))
+        .description(tr("L'écran de la carte graphique n'est pas piloté pour \
+                l'instant."))
         .child(&offline_button)
         .build();
     let offline_view = adw::ToolbarView::new();

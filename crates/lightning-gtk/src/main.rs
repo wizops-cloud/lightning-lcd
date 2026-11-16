@@ -16,10 +16,11 @@ use std::time::Duration;
 
 use adw::prelude::*;
 use gtk::{gdk, gio, glib};
+use lightning_i18n::tr;
 
 use crate::bind::{apply_daemon, apply_frame, apply_service, decode_jpeg};
 use crate::remote::{Remote, ServiceState};
-use crate::ui::{APP_ID, PAGES, Ui};
+use crate::ui::{APP_ID, Ui, pages};
 
 /// Options de lancement (les options de capture sont réservées aux tests).
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -80,11 +81,9 @@ fn about_dialog() -> adw::AboutDialog {
         .application_icon(APP_ID)
         .version(env!("CARGO_PKG_VERSION"))
         .developer_name("WizOps")
-        .comments(
-            "Réglage de l'écran LCD intégré à la carte graphique : tableau de bord de l'état \
-             du PC, image, vidéo, diaporama.\n\nProjet indépendant, sans lien avec le \
-             fabricant de la carte.",
-        )
+        .comments(tr("Réglage de l'écran LCD intégré à la carte \
+            graphique : tableau de bord de l'état du PC, image, vidéo, diaporama.\n\n\
+            Projet indépendant, sans lien avec le fabricant de la carte."))
         .website("https://github.com/wizops-cloud/lightning-lcd")
         .issue_url("https://github.com/wizops-cloud/lightning-lcd/issues")
         .license_type(gtk::License::Gpl30Only)
@@ -133,7 +132,7 @@ async fn screenshots(ui: Rc<Ui>, dir: PathBuf, tag: String, daemon_running: bool
             pause(700).await;
             shoot("menu");
         }
-        for (name, ..) in PAGES {
+        for (name, ..) in pages() {
             ui.show_page(name);
             if ui.split.is_collapsed() {
                 ui.split.set_show_content(true);
@@ -149,10 +148,10 @@ async fn screenshots(ui: Rc<Ui>, dir: PathBuf, tag: String, daemon_running: bool
         about.close();
         pause(500).await;
         // Écran « service arrêté », tel qu'il apparaît sans démon.
-        ui.offline.set_title("Le service Lightning est arrêté");
-        ui.offline.set_description(Some(
-            "L'écran de la carte graphique n'est pas piloté pour l'instant.",
-        ));
+        ui.offline.set_title(tr("Le service Lightning est arrêté"));
+        let detail = tr("L'écran de la carte graphique \
+            n'est pas piloté pour l'instant.");
+        ui.offline.set_description(Some(detail));
         ui.offline_button.set_visible(true);
         ui.force_offline.set(true);
         show_root(&ui, "offline");
@@ -243,7 +242,7 @@ fn activate(app: &adw::Application, options: &Options) {
                 refresh_loop(ui, remote, options).await;
             }
             Err(e) => {
-                ui.offline.set_title("Bus de session inaccessible");
+                ui.offline.set_title(tr("Bus de session inaccessible"));
                 ui.offline.set_description(Some(&e.to_string()));
                 ui.offline_button.set_visible(false);
                 show_root(&ui, "offline");
@@ -253,6 +252,7 @@ fn activate(app: &adw::Application, options: &Options) {
 }
 
 fn main() -> glib::ExitCode {
+    lightning_i18n::init();
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.iter().any(|a| a == "--version") {
         println!("lightning-settings {}", env!("CARGO_PKG_VERSION"));
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn pages_and_modes_are_complete() {
-        let names: Vec<&str> = PAGES.iter().map(|(n, ..)| *n).collect();
+        let names: Vec<&str> = pages().iter().map(|(n, ..)| *n).collect();
         assert_eq!(
             names,
             [
@@ -339,7 +339,7 @@ mod tests {
                 "service"
             ]
         );
-        let modes: Vec<lightning_ipc::Mode> = ui::MODES.iter().map(|(m, ..)| *m).collect();
+        let modes: Vec<lightning_ipc::Mode> = ui::modes().iter().map(|(m, ..)| *m).collect();
         assert_eq!(modes.len(), lightning_ipc::Mode::ALL.len());
         for mode in lightning_ipc::Mode::ALL {
             assert!(modes.contains(mode), "{mode} sans carte");

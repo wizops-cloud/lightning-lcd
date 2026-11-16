@@ -240,7 +240,7 @@ pub fn stopped_frame(width: u32, height: u32, when: &str) -> Vec<u8> {
     let (w, h) = (width as usize, height as usize);
     let mut buf = vec![0u32; w * h];
     let mut painter = TextPainter::new();
-    let title = "tableau de bord arrêté";
+    let title = lightning_i18n::tr("tableau de bord arrêté");
     let tw = painter.measure(title, 44.0);
     painter.draw(
         &mut buf,

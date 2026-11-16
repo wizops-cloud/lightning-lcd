@@ -52,9 +52,9 @@ macro_rules! string_enum {
             fn from_str(s: &str) -> Result<Self, Self::Err> {
                 match s {
                     $($text => Ok($name::$variant),)+
-                    other => Err(format!(
-                        "valeur « {other} » inconnue (attendu : {})",
-                        [$($text),+].join(", ")
+                    other => Err(lightning_i18n::trf(
+                        "valeur « {value} » inconnue (attendu : {expected})",
+                        &[("value", &other), ("expected", &[$($text),+].join(", "))],
                     )),
                 }
             }

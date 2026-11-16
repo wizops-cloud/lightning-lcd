@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::time::{Duration, Instant, SystemTime};
 
-use chrono::{DateTime, Datelike, Local, NaiveDateTime, Timelike};
+use chrono::{DateTime, Local, NaiveDateTime, Timelike};
 use image::imageops::FilterType;
 use image::{DynamicImage, ImageDecoder, RgbaImage};
 use serde::{Deserialize, Serialize};
@@ -54,10 +54,13 @@ impl Default for SlideshowConfig {
 impl SlideshowConfig {
     pub fn validate(&self) -> Result<(), String> {
         if !self.interval_s.is_finite() || !(1.0..=86_400.0).contains(&self.interval_s) {
-            return Err("durée par photo attendue entre 1 seconde et 24 heures".into());
+            return Err(lightning_i18n::tr(
+                "durée par photo attendue entre 1 seconde et 24 heures",
+            )
+            .into());
         }
         if self.transition_ms > 5000 {
-            return Err("fondu de 5 secondes au maximum".into());
+            return Err(lightning_i18n::tr("fondu de 5 secondes au maximum").into());
         }
         Ok(())
     }
@@ -86,8 +89,9 @@ impl std::str::FromStr for Order {
         match s {
             "random" => Ok(Self::Random),
             "chronological" => Ok(Self::Chronological),
-            other => Err(format!(
-                "ordre « {other} » inconnu (attendu : random, chronological)"
+            other => Err(lightning_i18n::trf(
+                "ordre « {value} » inconnu (attendu : random, chronological)",
+                &[("value", &other)],
             )),
         }
     }
@@ -116,8 +120,9 @@ impl std::str::FromStr for SlideFit {
         match s {
             "cover" => Ok(Self::Cover),
             "contain" => Ok(Self::Contain),
-            other => Err(format!(
-                "ajustement « {other} » inconnu (attendu : cover, contain)"
+            other => Err(lightning_i18n::trf(
+                "ajustement « {value} » inconnu (attendu : cover, contain)",
+                &[("value", &other)],
             )),
         }
     }
@@ -220,29 +225,9 @@ pub fn playlist(entries: &[Entry], order: Order, seed: u64) -> Vec<usize> {
     indices
 }
 
-const MONTHS: [&str; 12] = [
-    "janvier",
-    "février",
-    "mars",
-    "avril",
-    "mai",
-    "juin",
-    "juillet",
-    "août",
-    "septembre",
-    "octobre",
-    "novembre",
-    "décembre",
-];
-
-/// Date lisible en français (« 14 juillet 2024 »).
+/// Date lisible dans la langue de l'interface (« 14 juillet 2024 », « July 14, 2024 »).
 pub fn french_date(date: NaiveDateTime) -> String {
-    let day = if date.day() == 1 {
-        "1er".to_owned()
-    } else {
-        date.day().to_string()
-    };
-    format!("{day} {} {}", MONTHS[date.month0() as usize], date.year())
+    lightning_dashboard::render::day_date(lightning_i18n::lang(), date.date())
 }
 
 /// Photo composée à la taille de l'écran, sans les incrustations.
@@ -641,16 +626,16 @@ impl Slideshow {
         let mut buf = vec![0x0009_0B10u32; w * h];
         let (title, hint) = if self.cfg.folders.is_empty() {
             (
-                "diaporama : aucun dossier choisi",
-                "ajoutez un dossier de photos dans les réglages",
+                lightning_i18n::tr("diaporama : aucun dossier choisi"),
+                lightning_i18n::tr("ajoutez un dossier de photos dans les réglages"),
             )
         } else {
             (
-                "diaporama : aucune photo trouvée",
+                lightning_i18n::tr("diaporama : aucune photo trouvée"),
                 if crate::heif::SUPPORTED {
-                    "formats pris en charge : JPEG, PNG, WebP, BMP, HEIC"
+                    lightning_i18n::tr("formats pris en charge : JPEG, PNG, WebP, BMP, HEIC")
                 } else {
-                    "formats pris en charge : JPEG, PNG, WebP, BMP"
+                    lightning_i18n::tr("formats pris en charge : JPEG, PNG, WebP, BMP")
                 },
             )
         };

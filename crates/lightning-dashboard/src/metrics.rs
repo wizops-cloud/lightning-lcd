@@ -288,7 +288,7 @@ pub fn demo_snapshot(t: f32) -> Snapshot {
         time: Local::now(),
         uptime: Duration::from_secs(2 * 86_400 + 5 * 3600 + t as u64),
         cpu: CpuMetrics {
-            model: "CPU 16 cœurs".into(),
+            model: lightning_i18n::tr("CPU 16 cœurs").into(),
             usage: cpu_load,
             per_core: (0..32)
                 .map(|i| (cpu_load * (0.4 + 1.2 * wave(3.0, i as f32 * 0.7))).clamp(0.0, 100.0))
@@ -298,7 +298,7 @@ pub fn demo_snapshot(t: f32) -> Snapshot {
             temp_c: Some(48.0 + 20.0 * wave(9.0, 1.0)),
         },
         gpu: Some(GpuMetrics {
-            name: "Carte graphique".into(),
+            name: lightning_i18n::tr("Carte graphique").into(),
             temp_c: Some(45.0 + 25.0 * wave(11.0, 0.4)),
             usage: Some(gpu_load),
             mem_used: ((6.0 + 10.0 * wave(13.0, 0.2)) * 1_073_741_824.0) as u64,

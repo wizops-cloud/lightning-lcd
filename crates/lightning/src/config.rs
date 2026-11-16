@@ -112,9 +112,14 @@ pub fn load(explicit: Option<&Path>) -> Result<Config> {
             _ => return Ok(Config::default()),
         },
     };
-    let text =
-        std::fs::read_to_string(&path).with_context(|| format!("lecture de {}", path.display()))?;
-    parse(&text).with_context(|| format!("configuration invalide : {}", path.display()))
+    let text = std::fs::read_to_string(&path)
+        .with_context(|| lightning_i18n::trf("lecture de {path}", &[("path", &path.display())]))?;
+    parse(&text).with_context(|| {
+        lightning_i18n::trf(
+            "configuration invalide : {path}",
+            &[("path", &path.display())],
+        )
+    })
 }
 
 /// Vérifie les valeurs d'une configuration.
@@ -122,20 +127,23 @@ pub fn validate(config: &Config) -> Result<()> {
     let d = &config.dashboard;
     anyhow::ensure!(
         matches!(d.rotation, 0 | 180),
-        "rotation : seules 0 et 180 sont prises en charge"
+        lightning_i18n::tr("rotation : seules 0 et 180 sont prises en charge")
     );
     anyhow::ensure!(
         d.brightness.is_none_or(|b| b <= 100),
-        "brightness : valeur attendue entre 0 et 100"
+        lightning_i18n::tr("brightness : valeur attendue entre 0 et 100")
     );
-    anyhow::ensure!((1..=100).contains(&d.quality), "quality : 1 à 100");
+    anyhow::ensure!(
+        (1..=100).contains(&d.quality),
+        lightning_i18n::tr("quality : 1 à 100")
+    );
     anyhow::ensure!(
         d.fps.is_finite() && d.fps > 0.0,
-        "fps : valeur strictement positive attendue"
+        lightning_i18n::tr("fps : valeur strictement positive attendue")
     );
     anyhow::ensure!(
         matches!(config.output.preview_rotation, 0 | 90 | 180 | 270),
-        "preview_rotation : 0, 90, 180 ou 270"
+        lightning_i18n::tr("preview_rotation : 0, 90, 180 ou 270")
     );
     crate::media::parse_color(&config.daemon.color).context("daemon.color")?;
     config
@@ -160,11 +168,16 @@ pub fn save(path: &Path, config: &Config) -> Result<()> {
         toml::to_string_pretty(config)?
     );
     if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).with_context(|| format!("création de {}", dir.display()))?;
+        std::fs::create_dir_all(dir).with_context(|| {
+            lightning_i18n::trf("création de {path}", &[("path", &dir.display())])
+        })?;
     }
     let tmp = path.with_extension("toml.tmp");
-    std::fs::write(&tmp, text).with_context(|| format!("écriture de {}", tmp.display()))?;
-    std::fs::rename(&tmp, path).with_context(|| format!("remplacement de {}", path.display()))?;
+    std::fs::write(&tmp, text)
+        .with_context(|| lightning_i18n::trf("écriture de {path}", &[("path", &tmp.display())]))?;
+    std::fs::rename(&tmp, path).with_context(|| {
+        lightning_i18n::trf("remplacement de {path}", &[("path", &path.display())])
+    })?;
     Ok(())
 }
 

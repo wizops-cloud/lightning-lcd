@@ -7,5 +7,6 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+lightning-i18n = { workspace = true }
 serde = { workspace = true }
 zbus = { workspace = true }

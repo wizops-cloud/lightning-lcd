@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike};
+use lightning_i18n::{Lang, tr, trf};
 use serde::{Deserialize, Serialize};
 use tiny_skia::{
     FillRule, FilterQuality, GradientStop, IntSize, LinearGradient, Paint, PathBuilder, Pattern,
@@ -110,15 +111,61 @@ const MONTHS: [&str; 12] = [
     "décembre",
 ];
 
+const EN_WEEKDAYS: [&str; 7] = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+];
+const EN_MONTHS: [&str; 12] = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+];
+
 /// Date longue en français : « dimanche 1er novembre 2026 ».
 pub fn fr_long_date(date: NaiveDate) -> String {
-    let weekday = WEEKDAYS[date.weekday().num_days_from_monday() as usize];
-    let day = match date.day() {
-        1 => "1er".to_owned(),
-        d => d.to_string(),
-    };
-    let month = MONTHS[date.month0() as usize];
-    format!("{weekday} {day} {month} {}", date.year())
+    long_date(Lang::Fr, date)
+}
+
+/// Date longue : « dimanche 1er novembre 2026 », « Sunday, November 1, 2026 ».
+pub fn long_date(lang: Lang, date: NaiveDate) -> String {
+    let weekday = date.weekday().num_days_from_monday() as usize;
+    match lang {
+        Lang::Fr => format!("{} {}", WEEKDAYS[weekday], day_date(lang, date)),
+        Lang::En => format!("{}, {}", EN_WEEKDAYS[weekday], day_date(lang, date)),
+    }
+}
+
+/// Date sans jour de la semaine : « 1er novembre 2026 », « November 1, 2026 ».
+pub fn day_date(lang: Lang, date: NaiveDate) -> String {
+    match lang {
+        Lang::Fr => {
+            let day = match date.day() {
+                1 => "1er".to_owned(),
+                d => d.to_string(),
+            };
+            format!("{day} {} {}", MONTHS[date.month0() as usize], date.year())
+        }
+        Lang::En => format!(
+            "{} {}, {}",
+            EN_MONTHS[date.month0() as usize],
+            date.day(),
+            date.year()
+        ),
+    }
 }
 
 /// Durée de lecture : « 3:05 », « 1:02:03 ».
@@ -250,7 +297,7 @@ impl Renderer {
             self.text(x + hm_w, baseline, small, Weight::Bold, MUTED, &secs);
         }
         if cfg.date {
-            let date = fr_long_date(time.date());
+            let date = long_date(lightning_i18n::lang(), time.date());
             let dw = self.measure(52.0, Weight::Regular, &date);
             self.text(
                 (WIDTH as f32 - dw) / 2.0,
@@ -304,22 +351,25 @@ impl Renderer {
 
         let Some(track) = track else {
             self.note_icon(w / 2.0, 300.0, 1.6, MUTED);
-            let title = "Aucune lecture en cours";
+            let title = tr("Aucune lecture en cours");
             let tw = self.measure(48.0, Weight::Bold, title);
             self.text((w - tw) / 2.0, 470.0, 48.0, Weight::Bold, TEXT, title);
-            let hint = "Lancez un morceau dans un lecteur compatible MPRIS";
+            let hint = tr("Lancez un morceau dans un lecteur compatible MPRIS");
             let hw = self.measure(24.0, Weight::Regular, hint);
             self.text((w - hw) / 2.0, 520.0, 24.0, Weight::Regular, MUTED, hint);
-            let hint = "(Spotify, Rhythmbox, Lollypop, navigateur…)";
+            let hint = tr("(Spotify, Rhythmbox, Lollypop, navigateur…)");
             let hw = self.measure(24.0, Weight::Regular, hint);
             self.text((w - hw) / 2.0, 556.0, 24.0, Weight::Regular, MUTED, hint);
             return self.finish(rotation);
         };
 
         let header = if track.player.is_empty() {
-            "EN COURS DE LECTURE".to_owned()
+            tr("EN COURS DE LECTURE").to_owned()
         } else {
-            format!("EN COURS DE LECTURE · {}", track.player.to_uppercase())
+            trf(
+                "EN COURS DE LECTURE · {player}",
+                &[("player", &track.player.to_uppercase())],
+            )
         };
         self.text(64.0, 74.0, 22.0, Weight::Regular, MUTED, &header);
 
@@ -338,7 +388,7 @@ impl Renderer {
         // Textes à droite.
         let (x, max_w) = (608.0, w - 608.0 - 64.0);
         let title = if track.title.is_empty() {
-            "Titre inconnu"
+            tr("Titre inconnu")
         } else {
             &track.title
         };
@@ -372,7 +422,11 @@ impl Renderer {
         } else {
             self.pause_icon(x, state_y - 22.0, 24.0, ACCENT);
         }
-        let state = if track.playing { "Lecture" } else { "En pause" };
+        let state = if track.playing {
+            tr("En lecture")
+        } else {
+            tr("En pause")
+        };
         self.text(x + 40.0, state_y, 24.0, Weight::Regular, MUTED, state);
         let bar = Area {
             x,
@@ -586,10 +640,10 @@ pub fn demo_artwork(size: u32) -> Artwork {
 pub fn demo_track(elapsed: Duration) -> Track {
     let length = Duration::from_secs(245);
     Track {
-        title: "Lumière d'automne sur la ville".into(),
-        artist: "Ensemble Démonstration".into(),
-        album: "Écran de démonstration".into(),
-        player: "Lecteur".into(),
+        title: tr("Lumière d'automne sur la ville").into(),
+        artist: tr("Ensemble Démonstration").into(),
+        album: tr("Écran de démonstration").into(),
+        player: tr("Lecteur").into(),
         length: Some(length),
         position: Duration::from_secs(83 + elapsed.as_secs() % 150),
         playing: true,
@@ -633,6 +687,18 @@ mod tests {
         assert_eq!(
             fr_long_date(NaiveDate::from_ymd_opt(2027, 8, 15).unwrap()),
             "dimanche 15 août 2027"
+        );
+        assert_eq!(
+            long_date(Lang::En, NaiveDate::from_ymd_opt(2026, 11, 16).unwrap()),
+            "Monday, November 16, 2026"
+        );
+        assert_eq!(
+            day_date(Lang::En, NaiveDate::from_ymd_opt(2024, 7, 1).unwrap()),
+            "July 1, 2024"
+        );
+        assert_eq!(
+            day_date(Lang::Fr, NaiveDate::from_ymd_opt(2024, 7, 1).unwrap()),
+            "1er juillet 2024"
         );
         assert_eq!(fmt_track_time(Duration::from_secs(185)), "3:05");
         assert_eq!(fmt_track_time(Duration::from_secs(9)), "0:09");

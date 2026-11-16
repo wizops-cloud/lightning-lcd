@@ -11,8 +11,11 @@ use tiny_skia::{
 mod screens;
 
 pub use screens::{
-    Artwork, ClockConfig, Track, demo_artwork, demo_track, fmt_track_time, fr_long_date, wrap_text,
+    Artwork, ClockConfig, Track, day_date, demo_artwork, demo_track, fmt_track_time, fr_long_date,
+    long_date, wrap_text,
 };
+
+use lightning_i18n::{Lang, lang, tr, trf};
 
 use crate::config::DashboardConfig;
 use crate::metrics::{History, Snapshot};
@@ -189,7 +192,10 @@ impl Renderer {
         };
         self.text(24.0, 52.0, 34.0, Weight::Bold, TEXT, host);
         let host_w = self.measure(34.0, Weight::Bold, host);
-        let up = format!("allumé depuis {}", fmt_uptime(s.uptime.as_secs()));
+        let up = trf(
+            "allumé depuis {uptime}",
+            &[("uptime", &fmt_uptime(s.uptime.as_secs()))],
+        );
         self.text(
             24.0 + host_w + 24.0,
             50.0,
@@ -203,7 +209,7 @@ impl Renderer {
         let clock_w = self.measure(44.0, Weight::Bold, &clock);
         let right = WIDTH as f32 - 24.0;
         self.text(right - clock_w, 56.0, 44.0, Weight::Bold, TEXT, &clock);
-        let date = s.time.format("%d/%m/%Y").to_string();
+        let date = s.time.format(date_format(lang())).to_string();
         let date_w = self.measure(22.0, Weight::Regular, &date);
         self.text(
             right - clock_w - 24.0 - date_w,
@@ -249,7 +255,7 @@ impl Renderer {
                 26.0,
                 Weight::Regular,
                 MUTED,
-                "NVML indisponible",
+                tr("NVML indisponible"),
             );
             return;
         };
@@ -265,7 +271,7 @@ impl Renderer {
             GPU,
             &format!("{usage:.0}"),
             "%",
-            "charge",
+            tr("charge"),
         );
         let temp = gpu.temp_c.unwrap_or(0.0);
         self.gauge(
@@ -276,7 +282,7 @@ impl Renderer {
             temp_color(temp, 70.0, 85.0),
             &format!("{temp:.0}"),
             "°C",
-            "temp.",
+            tr("temp."),
         );
 
         // Colonne de valeurs à droite des jauges.
@@ -284,7 +290,7 @@ impl Renderer {
         let col_w = a.right() - col;
         let mut ly = y + 20.0;
         let power = gpu.power_w.map_or("—".into(), |p| format!("{p:.0} W"));
-        self.stat(col, ly, col_w, "puissance", &power);
+        self.stat(col, ly, col_w, tr("puissance"), &power);
         ly += 44.0;
         let fan = match gpu.fans.as_slice() {
             [] => "—".to_owned(),
@@ -294,13 +300,13 @@ impl Renderer {
                 .collect::<Vec<_>>()
                 .join(" "),
         };
-        self.stat(col, ly, col_w, "ventilo", &fan);
+        self.stat(col, ly, col_w, tr("ventilo"), &fan);
         ly += 44.0;
         let clock = gpu.clock_mhz.map_or("—".into(), |c| format!("{c} MHz"));
-        self.stat(col, ly, col_w, "fréq.", &clock);
+        self.stat(col, ly, col_w, tr("fréq."), &clock);
         ly += 44.0;
         let mem_clock = gpu.mem_clock_mhz.map_or("—".into(), |c| format!("{c} MHz"));
-        self.stat(col, ly, col_w, "mém.", &mem_clock);
+        self.stat(col, ly, col_w, tr("mém."), &mem_clock);
 
         // VRAM
         let by = cy + r + 40.0;
@@ -326,7 +332,7 @@ impl Renderer {
             w: a.w,
             h: a.bottom() - sy,
         };
-        self.sparkline(spark, &h.gpu_usage, Some(100.0), GPU, "charge");
+        self.sparkline(spark, &h.gpu_usage, Some(100.0), GPU, tr("charge"));
     }
 
     fn cpu_panel(&mut self, a: Area, s: &Snapshot, h: &History) {
@@ -342,7 +348,7 @@ impl Renderer {
             CPU,
             &format!("{:.0}", cpu.usage),
             "%",
-            "charge",
+            tr("charge"),
         );
         let temp = cpu.temp_c.unwrap_or(0.0);
         let temp_text = cpu.temp_c.map_or("—".into(), |t| format!("{t:.0}"));
@@ -354,17 +360,17 @@ impl Renderer {
             temp_color(temp, 75.0, 90.0),
             &temp_text,
             "°C",
-            "temp.",
+            tr("temp."),
         );
 
         let col = a.x + 4.0 * r + 70.0;
         let col_w = a.right() - col;
         let ghz = |mhz: Option<f32>| {
             mhz.map_or("—".into(), |f| {
-                format!("{:.2} GHz", f / 1000.0).replace('.', ",")
+                format!("{} GHz", lightning_i18n::decimal(f64::from(f) / 1000.0, 2))
             })
         };
-        self.stat(col, y + 20.0, col_w, "moy.", &ghz(cpu.freq_mhz));
+        self.stat(col, y + 20.0, col_w, tr("moy."), &ghz(cpu.freq_mhz));
         self.stat(col, y + 64.0, col_w, "max", &ghz(cpu.freq_max_mhz));
         self.stat(
             col,
@@ -393,7 +399,7 @@ impl Renderer {
             w: a.w,
             h: a.bottom() - sy,
         };
-        self.sparkline(spark, &h.cpu_usage, Some(100.0), CPU, "charge");
+        self.sparkline(spark, &h.cpu_usage, Some(100.0), CPU, tr("charge"));
     }
 
     fn memory_panel(&mut self, a: Area, s: &Snapshot, h: &History) {
@@ -408,7 +414,7 @@ impl Renderer {
             TEXT,
             &format!("{:.0} %", frac * 100.0),
         );
-        let used = format!("{} utilisés", fmt_bytes(m.used));
+        let used = trf("{size} utilisés", &[("size", &fmt_bytes(m.used))]);
         let w = self.measure(22.0, Weight::Regular, &used);
         self.text(a.right() - w, y + 36.0, 22.0, Weight::Regular, MUTED, &used);
         self.bar(
@@ -424,13 +430,15 @@ impl Renderer {
             "",
         );
         let swap = if m.swap_total > 0 {
-            format!(
-                "swap {} / {}",
-                fmt_bytes(m.swap_used),
-                fmt_bytes(m.swap_total)
+            trf(
+                "swap {used} / {total}",
+                &[
+                    ("used", &fmt_bytes(m.swap_used)),
+                    ("total", &fmt_bytes(m.swap_total)),
+                ],
             )
         } else {
-            "pas de swap".to_owned()
+            tr("pas de swap").to_owned()
         };
         self.text(a.x, y + 104.0, 20.0, Weight::Regular, MUTED, &swap);
         let sy = y + 114.0;
@@ -446,7 +454,7 @@ impl Renderer {
     }
 
     fn disks_panel(&mut self, a: Area, s: &Snapshot) {
-        let mut y = self.title(a, DISK, "Disques", "");
+        let mut y = self.title(a, DISK, tr("Disques"), "");
         if s.disks.is_empty() {
             self.text(
                 a.x,
@@ -454,7 +462,7 @@ impl Renderer {
                 22.0,
                 Weight::Regular,
                 MUTED,
-                "aucun point de montage",
+                tr("aucun point de montage"),
             );
         }
         for d in &s.disks {
@@ -482,11 +490,11 @@ impl Renderer {
 
     fn network_panel(&mut self, a: Area, s: &Snapshot, h: &History) {
         let n = &s.network;
-        let y = self.title(a, NET_RX, "Réseau", &n.interface);
+        let y = self.title(a, NET_RX, tr("Réseau"), &n.interface);
         let half = (a.w - 16.0) / 2.0;
         for (i, (label, value, accent, hist)) in [
-            ("↓ reçu", n.rx_bps, NET_RX, &h.net_rx),
-            ("↑ émis", n.tx_bps, NET_TX, &h.net_tx),
+            (tr("↓ reçu"), n.rx_bps, NET_RX, &h.net_rx),
+            (tr("↑ émis"), n.tx_bps, NET_TX, &h.net_tx),
         ]
         .into_iter()
         .enumerate()
@@ -839,12 +847,28 @@ fn temp_color(value: f32, warm: f32, hot: f32) -> Rgb {
     }
 }
 
+/// Format de la date courte de l'en-tête (JJ/MM/AAAA, ou AAAA-MM-JJ en anglais).
+pub fn date_format(lang: Lang) -> &'static str {
+    match lang {
+        Lang::Fr => "%d/%m/%Y",
+        Lang::En => "%Y-%m-%d",
+    }
+}
+
 /// Taille lisible, en unités binaires francisées (« 12,3 Go »).
 pub fn fmt_bytes(bytes: u64) -> String {
-    const UNITS: [&str; 5] = ["o", "Ko", "Mo", "Go", "To"];
+    fmt_bytes_in(lang(), bytes)
+}
+
+/// Taille lisible dans une langue donnée (« 12,3 Go », « 12.3 GB »).
+pub fn fmt_bytes_in(lang: Lang, bytes: u64) -> String {
+    let units: [&str; 5] = match lang {
+        Lang::Fr => ["o", "Ko", "Mo", "Go", "To"],
+        Lang::En => ["B", "KB", "MB", "GB", "TB"],
+    };
     let mut value = bytes as f64;
     let mut unit = 0;
-    while value >= 1024.0 && unit < UNITS.len() - 1 {
+    while value >= 1024.0 && unit < units.len() - 1 {
         value /= 1024.0;
         unit += 1;
     }
@@ -853,7 +877,11 @@ pub fn fmt_bytes(bytes: u64) -> String {
     } else {
         format!("{value:.1}")
     };
-    format!("{} {}", text.replace('.', ","), UNITS[unit])
+    let text = match lang {
+        Lang::Fr => text.replace('.', ","),
+        Lang::En => text,
+    };
+    format!("{text} {}", units[unit])
 }
 
 /// Débit lisible (« 1,2 Mo/s »).
@@ -863,9 +891,18 @@ pub fn fmt_rate(bytes_per_s: f64) -> String {
 
 /// Durée de fonctionnement compacte (« 3 j 04 h », « 5 h 07 », « 12 min »).
 pub fn fmt_uptime(secs: u64) -> String {
+    fmt_uptime_in(lang(), secs)
+}
+
+/// Durée de fonctionnement dans une langue donnée (« 3 j 04 h », « 3 d 04 h »).
+pub fn fmt_uptime_in(lang: Lang, secs: u64) -> String {
     let (d, h, m) = (secs / 86_400, secs / 3600 % 24, secs / 60 % 60);
     if d > 0 {
-        format!("{d} j {h:02} h")
+        let day = match lang {
+            Lang::Fr => "j",
+            Lang::En => "d",
+        };
+        format!("{d} {day} {h:02} h")
     } else if h > 0 {
         format!("{h} h {m:02}")
     } else {
@@ -1054,6 +1091,13 @@ mod tests {
         assert_eq!(fmt_uptime(59), "0 min");
         assert_eq!(fmt_uptime(5 * 3600 + 7 * 60), "5 h 07");
         assert_eq!(fmt_uptime(3 * 86_400 + 4 * 3600), "3 j 04 h");
+        // Anglais : unités anglaises, point décimal.
+        assert_eq!(fmt_bytes_in(Lang::En, 1536), "1.5 KB");
+        assert_eq!(fmt_bytes_in(Lang::En, 3700 << 30), "3.6 TB");
+        assert_eq!(fmt_bytes_in(Lang::En, 0), "0 B");
+        assert_eq!(fmt_uptime_in(Lang::En, 3 * 86_400 + 4 * 3600), "3 d 04 h");
+        assert_eq!(date_format(Lang::Fr), "%d/%m/%Y");
+        assert_eq!(date_format(Lang::En), "%Y-%m-%d");
     }
 
     /// Écrit une capture dans `target/` pour inspection visuelle (PPM, sans dépendance).

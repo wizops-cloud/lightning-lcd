@@ -11,6 +11,7 @@ name = "lightning-settings"
 path = "src/main.rs"
 
 [dependencies]
+lightning-i18n = { workspace = true }
 lightning-ipc = { workspace = true }
 zbus = { workspace = true }
 # Versions minimales visées : GTK 4.14 et libadwaita 1.5 (Ubuntu 24.04, Fedora 40+).

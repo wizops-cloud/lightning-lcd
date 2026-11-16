@@ -7,10 +7,13 @@ use std::time::{Duration, Instant};
 
 use adw::prelude::*;
 use gtk::{gdk, gdk_pixbuf, gio, glib};
+use lightning_i18n::{decimal, tr, trf};
 use lightning_ipc::Mode;
 
 use crate::remote::{DaemonState, Remote, ServiceState, error_text};
-use crate::ui::{Card, FITS, MODES, ON_EXIT, ORDERS, PAGES, PANELS, SLIDE_FITS, Ui, flow_append};
+use crate::ui::{
+    Card, Ui, fits, flow_append, modes, on_exit_choices, orders, pages, panels, slide_fits,
+};
 
 // ---------------------------------------------------------------- images
 
@@ -192,7 +195,7 @@ pub fn parse_hex(hex: &str) -> Option<gdk::RGBA> {
 
 pub fn file_name(path: &str) -> String {
     if path.is_empty() {
-        return "Aucun fichier choisi".to_owned();
+        return tr("Aucun fichier choisi").to_owned();
     }
     Path::new(path)
         .file_name()
@@ -201,7 +204,7 @@ pub fn file_name(path: &str) -> String {
 }
 
 pub fn mode_label(mode: &str) -> &'static str {
-    MODES
+    modes()
         .iter()
         .find(|(m, ..)| m.as_str() == mode)
         .map_or("—", |(_, title, ..)| title)
@@ -239,31 +242,43 @@ fn choose_file(
         let Ok(file) = result else { return };
         match file.path().and_then(|p| p.to_str().map(str::to_owned)) {
             Some(path) => then(path),
-            None => ui_.toast("Ce fichier n'est pas accessible localement"),
+            None => ui_.toast(tr("Ce fichier n'est pas accessible localement")),
         }
     });
 }
 
 fn pick_image(ui: &Rc<Ui>, remote: &Remote) {
     let (ui_, remote) = (ui.clone(), remote.clone());
-    choose_file(ui, "Choisir une image", "image/*", "Images", move |path| {
-        let fit = FITS[ui_.image_fit.selected().min(2) as usize].0;
-        let remote = remote.clone();
-        call(&ui_, async move {
-            remote.daemon.show_image(&path, fit.as_str()).await
-        });
-    });
+    choose_file(
+        ui,
+        tr("Choisir une image"),
+        "image/*",
+        tr("Images"),
+        move |path| {
+            let fit = fits()[ui_.image_fit.selected().min(2) as usize].0;
+            let remote = remote.clone();
+            call(&ui_, async move {
+                remote.daemon.show_image(&path, fit.as_str()).await
+            });
+        },
+    );
 }
 
 fn pick_video(ui: &Rc<Ui>, remote: &Remote) {
     let (ui_, remote) = (ui.clone(), remote.clone());
-    choose_file(ui, "Choisir une vidéo", "video/*", "Vidéos", move |path| {
-        let looped = ui_.video_loop.is_active();
-        let remote = remote.clone();
-        call(&ui_, async move {
-            remote.daemon.play_video(&path, looped).await
-        });
-    });
+    choose_file(
+        ui,
+        tr("Choisir une vidéo"),
+        "video/*",
+        tr("Vidéos"),
+        move |path| {
+            let looped = ui_.video_loop.is_active();
+            let remote = remote.clone();
+            call(&ui_, async move {
+                remote.daemon.play_video(&path, looped).await
+            });
+        },
+    );
 }
 
 /// Coche la carte du mode donné dans les deux jeux de cartes.
@@ -289,7 +304,7 @@ fn activate_mode(ui: &Rc<Ui>, remote: &Remote, mode: Mode) {
             pick_video(ui, remote);
         }
         Mode::Slideshow if state.slideshow_folders.is_empty() => {
-            ui.toast("Ajoutez d'abord un dossier de photos");
+            ui.toast(tr("Ajoutez d'abord un dossier de photos"));
             ui.show_page("diaporama");
             call(ui, async move {
                 remote_.daemon.set_mode(Mode::Slideshow.as_str()).await
@@ -311,8 +326,8 @@ fn activate_mode(ui: &Rc<Ui>, remote: &Remote, mode: Mode) {
 fn send_slideshow(ui: &Rc<Ui>, remote: &Remote, folders: Option<Vec<String>>) {
     let folders = folders.unwrap_or_else(|| ui.state.borrow().slideshow_folders.clone());
     let interval = ui.slide_interval.value();
-    let order = ORDERS[ui.slide_order.selected().min(1) as usize].0;
-    let fit = SLIDE_FITS[ui.slide_fit.selected().min(1) as usize].0;
+    let order = orders()[ui.slide_order.selected().min(1) as usize].0;
+    let fit = slide_fits()[ui.slide_fit.selected().min(1) as usize].0;
     // Le fondu garde sa durée si elle a été réglée à la main dans le fichier.
     let current = ui.state.borrow().slideshow_transition_ms;
     let transition = match (ui.slide_fade.is_active(), current) {
@@ -350,7 +365,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         let ui = ui.clone();
         move |_, row| {
             if let Some(row) = row
-                && let Some((name, ..)) = PAGES.get(row.index() as usize)
+                && let Some((name, ..)) = pages().get(row.index() as usize)
             {
                 ui.show_page(name);
             }
@@ -373,7 +388,8 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
                 return;
             }
             let level = adjustment.value().round().clamp(0.0, 100.0) as u8;
-            ui.brightness_caption.set_label(&format!("{level} %"));
+            ui.brightness_caption
+                .set_label(&trf("{level} %", &[("level", &level)]));
             let (ui_, remote) = (ui.clone(), remote.clone());
             debounced(&ui, Duration::from_millis(350), move || {
                 call(
@@ -469,7 +485,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             if path.is_empty() {
                 return;
             }
-            let fit = FITS[row.selected().min(2) as usize].0;
+            let fit = fits()[row.selected().min(2) as usize].0;
             let remote = remote.clone();
             call(&ui, async move {
                 remote.daemon.show_image(&path, fit.as_str()).await
@@ -527,24 +543,24 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         let (ui, remote) = (ui.clone(), remote.clone());
         move |_| {
             let dialog = gtk::FileDialog::builder()
-                .title("Ajouter un dossier de photos")
+                .title(tr("Ajouter un dossier de photos"))
                 .modal(true)
                 .build();
             let (ui_, remote) = (ui.clone(), remote.clone());
             dialog.select_folder(Some(&ui.window), gio::Cancellable::NONE, move |result| {
                 let Ok(folder) = result else { return };
                 let Some(path) = folder.path().and_then(|p| p.to_str().map(str::to_owned)) else {
-                    ui_.toast("Ce dossier n'est pas accessible localement");
+                    ui_.toast(tr("Ce dossier n'est pas accessible localement"));
                     return;
                 };
                 let mut folders = ui_.state.borrow().slideshow_folders.clone();
                 if folders.contains(&path) {
-                    ui_.toast("Ce dossier fait déjà partie du diaporama");
+                    ui_.toast(tr("Ce dossier fait déjà partie du diaporama"));
                 } else {
                     folders.push(path);
                     ui_.user_action();
                     send_slideshow(&ui_, &remote, Some(folders));
-                    ui_.toast("Dossier ajouté au diaporama");
+                    ui_.toast(tr("Dossier ajouté au diaporama"));
                 }
             });
         }
@@ -556,7 +572,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         move |_| {
             let remote = remote.clone();
             if ui.state.borrow().google_busy() {
-                call_confirmed(&ui, "Import annulé", async move {
+                call_confirmed(&ui, tr("Import annulé"), async move {
                     remote.daemon.google_photos_cancel().await
                 });
             } else {
@@ -573,7 +589,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         let (ui, remote) = (ui.clone(), remote.clone());
         move |_| {
             let remote = remote.clone();
-            call_confirmed(&ui, "Cache des photos Google vidé", async move {
+            call_confirmed(&ui, tr("Cache des photos Google vidé"), async move {
                 remote.daemon.google_photos_clear_cache().await
             });
         }
@@ -586,7 +602,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
                 ui.google_secret.text().to_string(),
             );
             if id.trim().is_empty() || secret.trim().is_empty() {
-                ui.toast("Renseignez l'identifiant client et le secret client");
+                ui.toast(tr("Renseignez l'identifiant client et le secret client"));
                 return;
             }
             let (ui_, remote) = (ui.clone(), remote.clone());
@@ -594,7 +610,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
                 match remote.daemon.set_google_credentials(&id, &secret).await {
                     Ok(()) => {
                         ui_.google_secret.set_text("");
-                        ui_.toast("Identifiants enregistrés");
+                        ui_.toast(tr("Identifiants enregistrés"));
                     }
                     Err(e) => ui_.toast(&error_text(&e)),
                 }
@@ -634,9 +650,9 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             }
             let (enabled, remote) = (row.is_active(), remote.clone());
             let message = if enabled {
-                "Le service se lancera à l'ouverture de session"
+                tr("Le service se lancera à l'ouverture de session")
             } else {
-                "Le service ne se lancera plus tout seul"
+                tr("Le service ne se lancera plus tout seul")
             };
             call_confirmed(&ui, message, async move {
                 remote.set_service_enabled(enabled).await
@@ -647,7 +663,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         let (ui, remote) = (ui.clone(), remote.clone());
         move |_| {
             let remote = remote.clone();
-            call_confirmed(&ui, "Service redémarré", async move {
+            call_confirmed(&ui, tr("Service redémarré"), async move {
                 remote.restart_service().await
             });
         }
@@ -660,7 +676,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             if !ui.user_action() {
                 return;
             }
-            let behaviour = ON_EXIT[row.selected().min(2) as usize].0;
+            let behaviour = on_exit_choices()[row.selected().min(2) as usize].0;
             let remote = remote.clone();
             call(&ui, async move {
                 remote.daemon.set_on_exit(behaviour.as_str()).await
@@ -675,9 +691,9 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             }
             let (enabled, remote) = (row.is_active(), remote.clone());
             let message = if enabled {
-                "Aperçu HTTP activé"
+                tr("Aperçu HTTP activé")
             } else {
-                "Aperçu HTTP coupé"
+                tr("Aperçu HTTP coupé")
             };
             call_confirmed(&ui, message, async move {
                 remote.daemon.set_http(enabled, "").await
@@ -705,7 +721,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
         move |row| {
             ui.user_action();
             let (player, remote) = (row.text().trim().to_owned(), remote.clone());
-            call_confirmed(&ui, "Lecteur préféré enregistré", async move {
+            call_confirmed(&ui, tr("Lecteur préféré enregistré"), async move {
                 remote.daemon.set_now_playing(&player).await
             });
         }
@@ -716,7 +732,7 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             ui.user_action();
             let (addr, enabled, remote) =
                 (row.text().to_string(), ui.http.is_active(), remote.clone());
-            call_confirmed(&ui, "Adresse de l'aperçu enregistrée", async move {
+            call_confirmed(&ui, tr("Adresse de l'aperçu enregistrée"), async move {
                 remote.daemon.set_http(enabled, &addr).await
             });
         }
@@ -815,15 +831,15 @@ fn card_subtitle(mode: Mode, st: &DaemonState, default: &str) -> String {
         Mode::Image if !st.image_path.is_empty() => file_name(&st.image_path),
         Mode::Video if !st.video_path.is_empty() => file_name(&st.video_path),
         Mode::Slideshow => match st.slideshow_folders.len() {
-            0 => "Aucun dossier choisi".to_owned(),
+            0 => tr("Aucun dossier choisi").to_owned(),
             n if st.mode == "slideshow" => {
                 format!(
                     "{} · {}",
-                    plural(st.slideshow_count as usize, "photo", "photos"),
-                    plural(n, "dossier", "dossiers")
+                    plural(st.slideshow_count as usize, tr("photo"), tr("photos")),
+                    plural(n, tr("dossier"), tr("dossiers"))
                 )
             }
-            n => plural(n, "dossier", "dossiers"),
+            n => plural(n, tr("dossier"), tr("dossiers")),
         },
         Mode::Color => format!("#{}", st.color),
         Mode::NowPlaying if st.mode == "now_playing" && !st.now_playing_title.is_empty() => {
@@ -849,22 +865,23 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
     ui.chip_lcd
         .root
         .set_tooltip_text(Some(if st.lcd_detail.is_empty() {
-            "État de la liaison avec l'écran"
+            tr("État de la liaison avec l'écran")
         } else {
             st.lcd_detail.as_str()
         }));
     ui.chip_mode.label.set_label(mode_label(&st.mode));
+    let fps = decimal(st.measured_fps, 1);
     ui.chip_fps
         .label
-        .set_label(&format!("{:.1} img/s", st.measured_fps).replace('.', ","));
+        .set_label(&trf("{fps} img/s", &[("fps", &fps)]));
     ui.chip_render
         .label
-        .set_label(&format!("{:.1} ms", st.render_ms).replace('.', ","));
+        .set_label(&format!("{} ms", decimal(st.render_ms, 1)));
     ui.chip_render.root.set_visible(st.mode == "dashboard");
     ui.chip_brightness
         .label
         .set_label(&if st.firmware_brightness >= 0 {
-            format!("{} %", st.firmware_brightness)
+            trf("{level} %", &[("level", &st.firmware_brightness)])
         } else {
             "—".to_owned()
         });
@@ -873,7 +890,7 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
 
     // Cartes.
     for card in ui.hero_cards.iter().chain(&ui.content_cards) {
-        let default = MODES
+        let default = modes()
             .iter()
             .find(|(m, ..)| *m == card.mode)
             .map_or("", |m| m.3);
@@ -895,10 +912,12 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
             format!(" — {}", st.lcd_detail)
         }
     )));
-    ui.stats_row.set_subtitle(&format!(
-        "{:.1} images/s · rendu {:.1} ms · {} images envoyées",
-        st.measured_fps, st.render_ms, st.frames_sent
-    ));
+    let (render, sent) = (decimal(st.render_ms, 1), st.frames_sent);
+    let args: [(&str, &dyn std::fmt::Display); 3] =
+        [("fps", &fps), ("render", &render), ("sent", &sent)];
+    #[rustfmt::skip]
+    let stats = trf("{fps} images/s · rendu {render} ms · {sent} images envoyées", &args);
+    ui.stats_row.set_subtitle(&stats);
     ui.image_row
         .set_subtitle(&glib::markup_escape_text(&file_name(&st.image_path)));
     ui.video_row
@@ -907,9 +926,9 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
     ui.now_playing_row.set_subtitle(&glib::markup_escape_text(
         if st.now_playing_title.is_empty() {
             if st.mode == "now_playing" {
-                "Aucune lecture en cours"
+                tr("Aucune lecture en cours")
             } else {
-                "Visible quand ce contenu est affiché"
+                tr("Visible quand ce contenu est affiché")
             }
         } else {
             &st.now_playing_title
@@ -917,31 +936,33 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
     ));
     ui.slideshow_summary
         .set_subtitle(&match st.slideshow_folders.len() {
-            0 => "Aucun dossier choisi".to_owned(),
-            n if st.mode == "slideshow" => format!(
-                "{} dans {}",
-                plural(st.slideshow_count as usize, "photo", "photos"),
-                plural(n, "dossier", "dossiers")
-            ),
-            n => plural(n, "dossier de photos", "dossiers de photos"),
+            0 => tr("Aucun dossier choisi").to_owned(),
+            n if st.mode == "slideshow" => {
+                let photos = plural(st.slideshow_count as usize, tr("photo"), tr("photos"));
+                let folders = plural(n, tr("dossier"), tr("dossiers"));
+                let args: [(&str, &dyn std::fmt::Display); 2] =
+                    [("photos", &photos), ("folders", &folders)];
+                trf("{photos} dans {folders}", &args)
+            }
+            n => plural(n, tr("dossier de photos"), tr("dossiers de photos")),
         });
 
     // Google Photos.
     ui.google_state
-        .set_label(&format!("État : {}", st.google_label()));
+        .set_label(&trf("État : {state}", &[("state", &st.google_label())]));
     ui.google_button.set_label(if st.google_busy() {
-        "Annuler l'import"
+        tr("Annuler l'import")
     } else {
-        "Choisir des photos Google…"
+        tr("Choisir des photos Google…")
     });
     ui.google_button
         .set_sensitive(st.google_state != "unconfigured");
     ui.google_cache.set_label(&match st.google_cached_count {
-        0 => "Aucune photo Google sur ce PC".to_owned(),
-        n => format!(
-            "{} sur ce PC",
-            plural(n as usize, "photo Google", "photos Google")
-        ),
+        0 => tr("Aucune photo Google sur ce PC").to_owned(),
+        n => {
+            let photos = plural(n as usize, tr("photo Google"), tr("photos Google"));
+            trf("{photos} sur ce PC", &[("photos", &photos)])
+        }
     });
     ui.google_clear
         .set_visible(st.google_cached_count > 0 && !st.google_busy());
@@ -970,14 +991,15 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
         };
         if level >= 0 {
             ui.brightness.set_value(f64::from(level));
-            ui.brightness_caption.set_label(&format!("{level} %"));
+            ui.brightness_caption
+                .set_label(&trf("{level} %", &[("level", &level)]));
         }
         ui.rotation.set_selected(u32::from(st.rotation == 180));
         ui.fps.set_value(st.fps);
         for card in ui.hero_cards.iter().chain(&ui.content_cards) {
             card.button.set_active(card.mode.as_str() == st.mode);
         }
-        if let Some(i) = FITS
+        if let Some(i) = fits()
             .iter()
             .position(|(fit, _)| fit.as_str() == st.image_fit)
         {
@@ -994,7 +1016,10 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
         if let Some(rgba) = parse_hex(&st.color) {
             ui.color.set_rgba(&rgba);
         }
-        if let Some(i) = ON_EXIT.iter().position(|(b, _)| b.as_str() == st.on_exit) {
+        if let Some(i) = on_exit_choices()
+            .iter()
+            .position(|(b, _)| b.as_str() == st.on_exit)
+        {
             ui.on_exit.set_selected(i as u32);
         }
         ui.http.set_active(st.http_enabled);
@@ -1002,10 +1027,13 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
             ui.http_addr.set_text(&st.http_addr);
         }
         ui.slide_interval.set_value(st.slideshow_interval);
-        if let Some(i) = ORDERS.iter().position(|(o, _)| *o == st.slideshow_order) {
+        if let Some(i) = orders().iter().position(|(o, _)| *o == st.slideshow_order) {
             ui.slide_order.set_selected(i as u32);
         }
-        if let Some(i) = SLIDE_FITS.iter().position(|(f, _)| *f == st.slideshow_fit) {
+        if let Some(i) = slide_fits()
+            .iter()
+            .position(|(f, _)| *f == st.slideshow_fit)
+        {
             ui.slide_fit.set_selected(i as u32);
         }
         ui.slide_fade.set_active(st.slideshow_transition_ms > 0);
@@ -1056,14 +1084,13 @@ fn apply_folders(ui: &Rc<Ui>, remote: &Remote, folders: &[String]) {
         texts.append(&subtitle);
         let remove = gtk::Button::builder()
             .icon_name("user-trash-symbolic")
-            .tooltip_text("Retirer ce dossier du diaporama")
+            .tooltip_text(tr("Retirer ce dossier du diaporama"))
             .valign(gtk::Align::Center)
             .build();
         remove.add_css_class("flat");
         remove.add_css_class("circular");
-        remove.update_property(&[gtk::accessible::Property::Label(&format!(
-            "Retirer le dossier {name} du diaporama"
-        ))]);
+        let label = trf("Retirer le dossier {name} du diaporama", &[("name", &name)]);
+        remove.update_property(&[gtk::accessible::Property::Label(&label)]);
         remove.connect_clicked({
             let (ui, remote, folder) = (ui.clone(), remote.clone(), folder.clone());
             move |_| {
@@ -1077,7 +1104,7 @@ fn apply_folders(ui: &Rc<Ui>, remote: &Remote, folders: &[String]) {
                     .collect();
                 ui.user_action();
                 send_slideshow(&ui, &remote, Some(folders));
-                ui.toast("Dossier retiré du diaporama");
+                ui.toast(tr("Dossier retiré du diaporama"));
             }
         });
         let caption = gtk::Box::new(gtk::Orientation::Horizontal, 6);
@@ -1100,9 +1127,9 @@ fn apply_folders(ui: &Rc<Ui>, remote: &Remote, folders: &[String]) {
                 return;
             };
             subtitle.set_label(&match (count, capped) {
-                (0, _) => "Aucune photo".to_owned(),
-                (n, true) => format!("plus de {n} photos"),
-                (n, false) => plural(n, "photo", "photos"),
+                (0, _) => tr("Aucune photo").to_owned(),
+                (n, true) => trf("plus de {n} photos", &[("n", &n)]),
+                (n, false) => plural(n, tr("photo"), tr("photos")),
             });
             if let Some(path) = first.and_then(|p| p.to_str().map(str::to_owned)) {
                 with_thumbnail(&ui_, &path, move |texture| {
@@ -1120,10 +1147,10 @@ fn apply_folders(ui: &Rc<Ui>, remote: &Remote, folders: &[String]) {
 pub fn panel_rows(enabled: &[String]) -> Vec<(&'static str, bool)> {
     let mut rows: Vec<(&'static str, bool)> = enabled
         .iter()
-        .filter_map(|w| PANELS.iter().find(|(name, ..)| name == w))
-        .map(|(name, ..)| (*name, true))
+        .filter_map(|w| panels().into_iter().find(|(name, ..)| name == w))
+        .map(|(name, ..)| (name, true))
         .collect();
-    for (name, ..) in PANELS {
+    for (name, ..) in panels() {
         if !rows.iter().any(|(n, _)| *n == name) {
             rows.push((name, false));
         }
@@ -1184,15 +1211,19 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         "gpu" => "GPU",
         "cpu" => "CPU",
         "memory" => "RAM",
-        "disks" => "Disques",
-        _ => "Réseau",
+        "disks" => tr("Disques"),
+        _ => tr("Réseau"),
     };
     let mut any = false;
     for top in [true, false] {
         let names: Vec<&str> = widgets
             .iter()
-            .filter_map(|w| PANELS.iter().find(|(n, _, _, t)| n == w && *t == top))
-            .map(|(n, ..)| *n)
+            .filter_map(|w| {
+                panels()
+                    .into_iter()
+                    .find(|(n, _, _, t)| n == w && *t == top)
+            })
+            .map(|(n, ..)| n)
             .collect();
         if names.is_empty() {
             continue;
@@ -1214,7 +1245,7 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         ui.schematic.append(&row);
     }
     if !any {
-        let empty = gtk::Label::new(Some("Aucun panneau activé : l'écran reste vide"));
+        let empty = gtk::Label::new(Some(tr("Aucun panneau activé : l'écran reste vide")));
         empty.add_css_class("empty");
         ui.schematic.append(&empty);
     }
@@ -1224,13 +1255,13 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
     let rows = panel_rows(widgets);
     let enabled_count = rows.iter().filter(|(_, on)| *on).count();
     for (index, (name, on)) in rows.iter().enumerate() {
-        let (_, title, subtitle, _) = PANELS
-            .iter()
+        let (_, title, subtitle, _) = panels()
+            .into_iter()
             .find(|(n, ..)| n == name)
             .expect("panneau connu");
         let row = adw::ActionRow::builder()
-            .title(*title)
-            .subtitle(*subtitle)
+            .title(title)
+            .subtitle(subtitle)
             .build();
         let dot = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         dot.add_css_class("panel-dot");
@@ -1242,18 +1273,25 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         let handle = gtk::Image::from_icon_name("list-drag-handle-symbolic");
         handle.add_css_class("drag-handle");
         if *on {
-            handle.set_tooltip_text(Some("Glisser pour réordonner"));
+            handle.set_tooltip_text(Some(tr("Glisser pour réordonner")));
             attach_drag(ui, remote, &row, name);
         } else {
             handle.set_opacity(0.0);
         }
         row.add_prefix(&handle);
-        for (icon, delta, tip, sensitive) in [
-            ("go-up-symbolic", -1, "Monter", *on && index > 0),
+        for (icon, delta, tip, label, sensitive) in [
+            (
+                "go-up-symbolic",
+                -1,
+                tr("Monter"),
+                trf("Monter le panneau {title}", &[("title", &title)]),
+                *on && index > 0,
+            ),
             (
                 "go-down-symbolic",
                 1,
-                "Descendre",
+                tr("Descendre"),
+                trf("Descendre le panneau {title}", &[("title", &title)]),
                 *on && index + 1 < enabled_count,
             ),
         ] {
@@ -1262,9 +1300,7 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
             button.set_valign(gtk::Align::Center);
             button.set_sensitive(sensitive);
             button.set_tooltip_text(Some(tip));
-            button.update_property(&[gtk::accessible::Property::Label(&format!(
-                "{tip} le panneau {title}"
-            ))]);
+            button.update_property(&[gtk::accessible::Property::Label(&label)]);
             let (ui_, remote, name) = (ui.clone(), remote.clone(), *name);
             button.connect_clicked(move |_| {
                 let current = ui_.state.borrow().widgets.clone();
@@ -1275,9 +1311,8 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         let switch = gtk::Switch::new();
         switch.set_active(*on);
         switch.set_valign(gtk::Align::Center);
-        switch.update_property(&[gtk::accessible::Property::Label(&format!(
-            "Afficher le panneau {title}"
-        ))]);
+        let label = trf("Afficher le panneau {title}", &[("title", &title)]);
+        switch.update_property(&[gtk::accessible::Property::Label(&label)]);
         let (ui_, remote, name) = (ui.clone(), remote.clone(), *name);
         switch.connect_active_notify(move |switch| {
             if ui_.updating.get() {
@@ -1355,12 +1390,11 @@ pub fn apply_service(ui: &Ui, service: &ServiceState, daemon_running: bool) {
     ui.service_title.set_label(service.active_label());
     ui.service_hint.set_label(match service.active.as_str() {
         "active" => {
-            "Le service pilote l'écran en arrière-plan, même quand cette fenêtre est fermée."
+            tr("Le service pilote l'écran en arrière-plan, même quand cette fenêtre est fermée.")
         }
-        "failed" => {
-            "Consultez « journalctl --user -u lightning-dashboard », puis redémarrez le service."
-        }
-        _ => "L'écran n'est pas piloté tant que le service est arrêté.",
+        "failed" => tr("Consultez « journalctl --user -u lightning-dashboard », \
+                puis redémarrez le service."),
+        _ => tr("L'écran n'est pas piloté tant que le service est arrêté."),
     });
     if Instant::now() >= ui.hold_until.get() {
         ui.service_active.set_active(service.is_active());
@@ -1372,22 +1406,28 @@ pub fn apply_service(ui: &Ui, service: &ServiceState, daemon_running: bool) {
     if !daemon_running {
         let (title, description, can_start) = if !service.is_installed() {
             (
-                "Le service Lightning n'est pas installé",
-                "Installez l'unité lightning-dashboard.service (voir le README), puis relancez l'application.",
+                tr("Le service Lightning n'est pas installé"),
+                tr("Installez l'unité lightning-dashboard.service (voir le \
+                        README), puis relancez l'application."),
                 false,
             )
         } else if service.active == "failed" {
             (
-                "Le service Lightning a échoué",
-                "Consultez « journalctl --user -u lightning-dashboard », puis relancez le service.",
+                tr("Le service Lightning a échoué"),
+                tr("Consultez « journalctl --user -u lightning-dashboard », \
+                        puis relancez le service."),
                 true,
             )
         } else if service.is_active() {
-            ("Le service démarre…", "Connexion au démon en cours.", false)
+            (
+                tr("Le service démarre…"),
+                tr("Connexion au démon en cours."),
+                false,
+            )
         } else {
             (
-                "Le service Lightning est arrêté",
-                "L'écran de la carte graphique n'est pas piloté pour l'instant.",
+                tr("Le service Lightning est arrêté"),
+                tr("L'écran de la carte graphique n'est pas piloté pour l'instant."),
                 true,
             )
         };
@@ -1441,7 +1481,7 @@ mod tests {
         }
         assert_eq!(mode_label("inconnu"), "—");
         // Chaque panneau connu du démon a sa ligne, dans le même ordre.
-        let names: Vec<&str> = PANELS.iter().map(|(n, ..)| *n).collect();
+        let names: Vec<&str> = panels().iter().map(|(n, ..)| *n).collect();
         assert_eq!(names, lightning_ipc::WIDGETS);
         assert_eq!(plural(1, "photo", "photos"), "1 photo");
         assert_eq!(plural(3, "photo", "photos"), "3 photos");

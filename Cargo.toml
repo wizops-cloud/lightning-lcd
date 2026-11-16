@@ -4,6 +4,7 @@ members = [
     "crates/lightning-lcd",
     "crates/lightning-dashboard",
     "crates/lightning-ipc",
+    "crates/lightning-i18n",
     "crates/lightning",
     "crates/lightning-gtk",
 ]
@@ -18,6 +19,7 @@ repository = "https://github.com/wizops-cloud/lightning-lcd"
 lightning-lcd = { path = "crates/lightning-lcd" }
 lightning-dashboard = { path = "crates/lightning-dashboard" }
 lightning-ipc = { path = "crates/lightning-ipc" }
+lightning-i18n = { path = "crates/lightning-i18n" }
 zbus = "5"
 thiserror = "2"
 tracing = "0.1"

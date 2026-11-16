@@ -174,7 +174,7 @@ fn worker(shared: &Shared, opts: &LcdOptions, stats: &SharedStats) {
                 restore_firmware();
                 stats.set_lcd(
                     LcdState::Disabled,
-                    "écran rendu au firmware (animation MSI)",
+                    lightning_i18n::tr("écran rendu au firmware (animation MSI)"),
                 );
             }
         }
@@ -190,7 +190,10 @@ fn worker(shared: &Shared, opts: &LcdOptions, stats: &SharedStats) {
                         stats.lock().lcd.reconnects += 1;
                     }
                     ever_connected = true;
-                    stats.set_lcd(LcdState::Connected, format!("mode {:?}", d.mode()));
+                    stats.set_lcd(
+                        LcdState::Connected,
+                        lightning_i18n::trf("mode {mode}", &[("mode", &format!("{:?}", d.mode()))]),
+                    );
                     display = Some(d);
                 }
                 Err(e) => {
@@ -263,7 +266,7 @@ fn worker(shared: &Shared, opts: &LcdOptions, stats: &SharedStats) {
             }
         }
     }
-    stats.set_lcd(LcdState::Disabled, "arrêté");
+    stats.set_lcd(LcdState::Disabled, lightning_i18n::tr("arrêté"));
     shared.wake.notify_all();
 }
 
@@ -301,10 +304,12 @@ impl Sink for LcdSink {
         let mut slot = self.shared.slot.lock().unwrap_or_else(|e| e.into_inner());
         while slot.delivered < self.last_seq {
             if let Some(err) = &slot.failed {
-                bail!("écran : {err}");
+                bail!(lightning_i18n::trf("écran : {error}", &[("error", err)]));
             }
             if Instant::now() >= deadline || self.stop.load(Ordering::SeqCst) {
-                bail!("écran : image non affichée (délai dépassé ou arrêt demandé)");
+                bail!(lightning_i18n::tr(
+                    "écran : image non affichée (délai dépassé ou arrêt demandé)"
+                ));
             }
             slot = self
                 .shared

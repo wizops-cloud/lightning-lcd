@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::Subcommand;
+use lightning_i18n::{tr, trf};
 use lightning_ipc::{Fit, LightningProxyBlocking, Mode, OnExit, SYSTEMD_UNIT};
 
 #[derive(Subcommand, Debug, Clone, PartialEq)]
@@ -107,10 +108,14 @@ pub enum CtlCmd {
 
 /// Chemin absolu : le démon n'a pas le même répertoire courant que l'appelant.
 fn absolute(path: &Path) -> Result<String> {
-    let abs = std::path::absolute(path).with_context(|| format!("chemin {}", path.display()))?;
-    abs.to_str()
-        .map(str::to_owned)
-        .ok_or_else(|| anyhow!("chemin non UTF-8 : {}", abs.display()))
+    let abs = std::path::absolute(path)
+        .with_context(|| trf("chemin {path}", &[("path", &path.display())]))?;
+    abs.to_str().map(str::to_owned).ok_or_else(|| {
+        anyhow!(trf(
+            "chemin non UTF-8 : {path}",
+            &[("path", &abs.display())]
+        ))
+    })
 }
 
 /// Message d'erreur lisible pour un appel D-Bus raté.
@@ -120,14 +125,14 @@ fn explain(err: zbus::Error) -> anyhow::Error {
             if name.as_str().ends_with("ServiceUnknown")
                 || name.as_str().ends_with("NameHasNoOwner")
             {
-                anyhow!("le démon ne tourne pas (systemctl --user start {SYSTEMD_UNIT})")
+                not_running()
             } else {
                 anyhow!("{}", detail.clone().unwrap_or_else(|| name.to_string()))
             }
         }
         zbus::Error::FDO(e) => match e.as_ref() {
             zbus::fdo::Error::ServiceUnknown(_) | zbus::fdo::Error::NameHasNoOwner(_) => {
-                anyhow!("le démon ne tourne pas (systemctl --user start {SYSTEMD_UNIT})")
+                not_running()
             }
             other => anyhow!("{other}"),
         },
@@ -135,13 +140,20 @@ fn explain(err: zbus::Error) -> anyhow::Error {
     }
 }
 
+fn not_running() -> anyhow::Error {
+    anyhow!(trf(
+        "le démon ne tourne pas (systemctl --user start {unit})",
+        &[("unit", &SYSTEMD_UNIT)]
+    ))
+}
+
 fn yes_no(value: bool) -> &'static str {
-    if value { "oui" } else { "non" }
+    if value { tr("oui") } else { tr("non") }
 }
 
 fn brightness_text(value: i32) -> String {
     if value < 0 {
-        "inconnue".into()
+        tr("inconnue").into()
     } else {
         format!("{value} %")
     }
@@ -152,92 +164,122 @@ pub fn run(proxy: &LightningProxyBlocking<'_>, cmd: CtlCmd, out: &mut impl Write
     match cmd {
         CtlCmd::Status => {
             let p = |r: zbus::Result<String>| r.map_err(explain);
-            writeln!(out, "démon          : version {}", p(proxy.version())?)?;
+            let mut line = |label: &str, value: String| -> std::io::Result<()> {
+                writeln!(out, "{label:<15}: {value}")
+            };
+            line(
+                tr("démon"),
+                trf("version {v}", &[("v", &p(proxy.version())?)]),
+            )?;
             let detail = p(proxy.lcd_detail())?;
             let detail = if detail.is_empty() {
                 String::new()
             } else {
                 format!(" ({detail})")
             };
-            writeln!(out, "écran          : {}{detail}", p(proxy.lcd_state())?)?;
-            writeln!(out, "contenu        : {}", p(proxy.mode())?)?;
-            writeln!(
-                out,
-                "luminosité     : demandée {}, firmware {}",
-                brightness_text(proxy.brightness().map_err(explain)?),
-                brightness_text(proxy.firmware_brightness().map_err(explain)?)
+            line(tr("écran"), format!("{}{detail}", p(proxy.lcd_state())?))?;
+            line(tr("contenu"), p(proxy.mode())?)?;
+            line(
+                tr("luminosité"),
+                trf(
+                    "demandée {asked}, firmware {firmware}",
+                    &[
+                        (
+                            "asked",
+                            &brightness_text(proxy.brightness().map_err(explain)?),
+                        ),
+                        (
+                            "firmware",
+                            &brightness_text(proxy.firmware_brightness().map_err(explain)?),
+                        ),
+                    ],
+                ),
             )?;
-            writeln!(
-                out,
-                "cadence        : {} img/s (mesurée {}), rendu {} ms",
-                proxy.fps().map_err(explain)?,
-                proxy.measured_fps().map_err(explain)?,
-                proxy.render_ms().map_err(explain)?
+            line(
+                tr("cadence"),
+                trf(
+                    "{fps} img/s (mesurée {measured}), rendu {render} ms",
+                    &[
+                        ("fps", &proxy.fps().map_err(explain)?),
+                        ("measured", &proxy.measured_fps().map_err(explain)?),
+                        ("render", &proxy.render_ms().map_err(explain)?),
+                    ],
+                ),
             )?;
-            writeln!(
-                out,
-                "rotation       : {}°",
-                proxy.rotation().map_err(explain)?
+            line(
+                tr("rotation"),
+                format!("{}°", proxy.rotation().map_err(explain)?),
             )?;
-            writeln!(
-                out,
-                "panneaux       : {}",
-                proxy.widgets().map_err(explain)?.join(", ")
+            line(tr("panneaux"), proxy.widgets().map_err(explain)?.join(", "))?;
+            line(
+                tr("image"),
+                format!("{} ({})", p(proxy.image_path())?, p(proxy.image_fit())?),
             )?;
-            writeln!(
-                out,
-                "image          : {} ({})",
-                p(proxy.image_path())?,
-                p(proxy.image_fit())?
+            let looped = if proxy.video_loop().map_err(explain)? {
+                tr("en boucle")
+            } else {
+                tr("une fois")
+            };
+            line(
+                tr("vidéo"),
+                format!("{} ({looped})", p(proxy.video_path())?),
             )?;
-            writeln!(
-                out,
-                "vidéo          : {} ({})",
-                p(proxy.video_path())?,
-                if proxy.video_loop().map_err(explain)? {
-                    "en boucle"
-                } else {
-                    "une fois"
-                }
+            line(tr("couleur"), p(proxy.color())?)?;
+            line(
+                tr("diaporama"),
+                trf(
+                    "{folders} dossier(s), {photos} photos, {interval} s par photo, ordre {order}",
+                    &[
+                        (
+                            "folders",
+                            &proxy.slideshow_folders().map_err(explain)?.len(),
+                        ),
+                        ("photos", &proxy.slideshow_count().map_err(explain)?),
+                        ("interval", &proxy.slideshow_interval().map_err(explain)?),
+                        ("order", &p(proxy.slideshow_order())?),
+                    ],
+                ),
             )?;
-            writeln!(out, "couleur        : {}", p(proxy.color())?)?;
-            writeln!(
-                out,
-                "diaporama      : {} dossier(s), {} photos, {} s par photo, ordre {}",
-                proxy.slideshow_folders().map_err(explain)?.len(),
-                proxy.slideshow_count().map_err(explain)?,
-                proxy.slideshow_interval().map_err(explain)?,
-                p(proxy.slideshow_order())?
-            )?;
-            writeln!(
-                out,
-                "horloge        : secondes {}, date {}",
-                yes_no(proxy.clock_seconds().map_err(explain)?),
-                yes_no(proxy.clock_date().map_err(explain)?)
+            line(
+                tr("horloge"),
+                trf(
+                    "secondes {seconds}, date {date}",
+                    &[
+                        ("seconds", &yes_no(proxy.clock_seconds().map_err(explain)?)),
+                        ("date", &yes_no(proxy.clock_date().map_err(explain)?)),
+                    ],
+                ),
             )?;
             let player = p(proxy.now_playing_player())?;
             let title = p(proxy.now_playing_title())?;
-            writeln!(
-                out,
-                "lecture        : {} (lecteur {})",
-                if title.is_empty() { "—" } else { &title },
-                if player.is_empty() {
-                    "au choix"
-                } else {
-                    &player
-                }
-            )?;
-            writeln!(out, "à l'arrêt      : {}", p(proxy.on_exit())?)?;
-            let http = if proxy.http_enabled().map_err(explain)? {
-                "actif"
+            let player = if player.is_empty() {
+                tr("au choix").to_owned()
             } else {
-                "coupé"
+                player
             };
-            writeln!(out, "aperçu HTTP    : {http} ({})", p(proxy.http_addr())?)?;
-            writeln!(
-                out,
-                "images envoyées: {}",
-                proxy.frames_sent().map_err(explain)?
+            line(
+                tr("lecture"),
+                trf(
+                    "{title} (lecteur {player})",
+                    &[
+                        ("title", &if title.is_empty() { "—" } else { &title }),
+                        ("player", &player),
+                    ],
+                ),
+            )?;
+            line(tr("à l'arrêt"), p(proxy.on_exit())?)?;
+            let http = if proxy.http_enabled().map_err(explain)? {
+                tr("actif")
+            } else {
+                tr("coupé")
+            };
+            line(
+                tr("aperçu HTTP"),
+                format!("{http} ({})", p(proxy.http_addr())?),
+            )?;
+            line(
+                tr("images envoyées"),
+                proxy.frames_sent().map_err(explain)?.to_string(),
             )?;
         }
         CtlCmd::Mode { mode } => proxy.set_mode(mode.as_str()).map_err(explain)?,
@@ -324,31 +366,40 @@ pub fn run(proxy: &LightningProxyBlocking<'_>, cmd: CtlCmd, out: &mut impl Write
                 proxy.google_photos_start().map_err(explain)?;
                 writeln!(
                     out,
-                    "import démarré : suivre « lightning ctl google status » et ouvrir l'adresse indiquée"
+                    "{}",
+                    tr(
+                        "import démarré : suivre « lightning ctl google status » et ouvrir l'adresse indiquée"
+                    )
                 )?;
             }
             "cancel" => proxy.google_photos_cancel().map_err(explain)?,
             "clear" => proxy.google_photos_clear_cache().map_err(explain)?,
             _ => {
-                writeln!(out, "état    : {}", proxy.google_state().map_err(explain)?)?;
-                writeln!(out, "détail  : {}", proxy.google_detail().map_err(explain)?)?;
-                writeln!(out, "adresse : {}", proxy.google_url().map_err(explain)?)?;
-                writeln!(
-                    out,
-                    "cache   : {} photos dans {}",
-                    proxy.google_cached_count().map_err(explain)?,
-                    proxy.google_cache_dir().map_err(explain)?
-                )?;
+                let state = proxy.google_state().map_err(explain)?;
+                writeln!(out, "{:<8}: {state}", tr("état"))?;
+                let detail = proxy.google_detail().map_err(explain)?;
+                writeln!(out, "{:<8}: {detail}", tr("détail"))?;
+                let url = proxy.google_url().map_err(explain)?;
+                writeln!(out, "{:<8}: {url}", tr("adresse"))?;
+                let cache = trf(
+                    "{count} photos dans {dir}",
+                    &[
+                        ("count", &proxy.google_cached_count().map_err(explain)?),
+                        ("dir", &proxy.google_cache_dir().map_err(explain)?),
+                    ],
+                );
+                writeln!(out, "{:<8}: {cache}", tr("cache"))?;
             }
         },
         CtlCmd::Frame { file: output } => {
             let jpeg = proxy.get_frame_jpeg().map_err(explain)?;
             if jpeg.is_empty() {
-                bail!("le démon n'a encore diffusé aucune image");
+                bail!(tr("le démon n'a encore diffusé aucune image"));
             }
             std::fs::write(&output, &jpeg)
-                .with_context(|| format!("écriture de {}", output.display()))?;
-            writeln!(out, "{} ({} octets)", output.display(), jpeg.len())?;
+                .with_context(|| trf("écriture de {path}", &[("path", &output.display())]))?;
+            let size = trf("{n} octets", &[("n", &jpeg.len())]);
+            writeln!(out, "{} ({size})", output.display())?;
         }
         CtlCmd::Save => proxy.save_config().map_err(explain)?,
         CtlCmd::Reload => proxy.reload_config().map_err(explain)?,
@@ -368,7 +419,7 @@ pub fn proxy(connection: &zbus::blocking::Connection) -> Result<LightningProxyBl
 /// Point d'entrée de `lightning ctl` : se connecte au bus de session.
 pub fn main(cmd: CtlCmd) -> Result<()> {
     let connection =
-        zbus::blocking::Connection::session().context("connexion au bus de session")?;
+        zbus::blocking::Connection::session().context(tr("connexion au bus de session"))?;
     match run(&proxy(&connection)?, cmd, &mut std::io::stdout().lock()) {
         // Sortie redirigée vers un `head` déjà fermé : ce n'est pas une erreur.
         Err(e)

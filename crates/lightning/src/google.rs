@@ -25,6 +25,7 @@ use sha2::{Digest, Sha256};
 use tracing::{debug, info, warn};
 
 use crate::secrets::TokenStorage;
+use lightning_i18n::{tr, trf};
 
 /// Portée OAuth de la Picker API (lecture des éléments choisis par l'utilisateur).
 pub const SCOPE: &str = "https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
@@ -182,11 +183,11 @@ pub fn parse_redirect(target: &str) -> Result<(String, String), String> {
         }
     }
     if let Some(error) = error {
-        return Err(format!("autorisation refusée ({error})"));
+        return Err(trf("autorisation refusée ({error})", &[("error", &error)]));
     }
     match (code, state) {
         (Some(code), Some(state)) => Ok((code, state)),
-        _ => Err("redirection sans code d'autorisation".into()),
+        _ => Err(tr("redirection sans code d'autorisation").into()),
     }
 }
 
@@ -287,7 +288,10 @@ fn explain(context: &str, err: ureq::Error) -> String {
                         .map(str::to_owned)
                 })
                 .unwrap_or_else(|| body.chars().take(200).collect());
-            format!("{context} : erreur {code} ({detail})")
+            trf(
+                "{context} : erreur {code} ({detail})",
+                &[("context", &context), ("code", &code), ("detail", &detail)],
+            )
         }
         other => format!("{context} : {other}"),
     }
@@ -310,9 +314,14 @@ pub fn exchange_code(
             ("grant_type", "authorization_code"),
             ("redirect_uri", redirect_uri),
         ])
-        .map_err(|e| explain("échange du code d'autorisation", e))?
+        .map_err(|e| explain(tr("échange du code d'autorisation"), e))?
         .into_json()
-        .map_err(|e| format!("réponse du serveur de jetons illisible : {e}"))
+        .map_err(|e| {
+            trf(
+                "réponse du serveur de jetons illisible : {error}",
+                &[("error", &e)],
+            )
+        })
 }
 
 pub fn refresh(
@@ -328,9 +337,14 @@ pub fn refresh(
             ("refresh_token", refresh_token),
             ("grant_type", "refresh_token"),
         ])
-        .map_err(|e| explain("renouvellement du jeton", e))?
+        .map_err(|e| explain(tr("renouvellement du jeton"), e))?
         .into_json()
-        .map_err(|e| format!("réponse du serveur de jetons illisible : {e}"))
+        .map_err(|e| {
+            trf(
+                "réponse du serveur de jetons illisible : {error}",
+                &[("error", &e)],
+            )
+        })
 }
 
 fn bearer(token: &str) -> String {
@@ -342,9 +356,9 @@ pub fn create_session(endpoints: &Endpoints, token: &str) -> Result<Session, Str
         .post(&format!("{}/sessions", endpoints.picker))
         .set("Authorization", &bearer(token))
         .send_json(serde_json::json!({}))
-        .map_err(|e| explain("création de la session de sélection", e))?
+        .map_err(|e| explain(tr("création de la session de sélection"), e))?
         .into_json()
-        .map_err(|e| format!("session illisible : {e}"))
+        .map_err(|e| trf("session illisible : {error}", &[("error", &e)]))
 }
 
 pub fn get_session(endpoints: &Endpoints, token: &str, id: &str) -> Result<Session, String> {
@@ -352,9 +366,9 @@ pub fn get_session(endpoints: &Endpoints, token: &str, id: &str) -> Result<Sessi
         .get(&format!("{}/sessions/{}", endpoints.picker, urlencode(id)))
         .set("Authorization", &bearer(token))
         .call()
-        .map_err(|e| explain("lecture de la session de sélection", e))?
+        .map_err(|e| explain(tr("lecture de la session de sélection"), e))?
         .into_json()
-        .map_err(|e| format!("session illisible : {e}"))
+        .map_err(|e| trf("session illisible : {error}", &[("error", &e)]))
 }
 
 pub fn delete_session(endpoints: &Endpoints, token: &str, id: &str) -> Result<(), String> {
@@ -363,7 +377,7 @@ pub fn delete_session(endpoints: &Endpoints, token: &str, id: &str) -> Result<()
         .set("Authorization", &bearer(token))
         .call()
         .map(drop)
-        .map_err(|e| explain("suppression de la session", e))
+        .map_err(|e| explain(tr("suppression de la session"), e))
 }
 
 /// Liste tous les éléments choisis (pages de 100).
@@ -385,9 +399,9 @@ pub fn list_media_items(
         }
         let page: MediaPage = request
             .call()
-            .map_err(|e| explain("liste des photos choisies", e))?
+            .map_err(|e| explain(tr("liste des photos choisies"), e))?
             .into_json()
-            .map_err(|e| format!("liste des photos illisible : {e}"))?;
+            .map_err(|e| trf("liste des photos illisible : {error}", &[("error", &e)]))?;
         items.extend(page.media_items);
         match page.next_page_token.filter(|t| !t.is_empty()) {
             Some(t) if items.len() < 5000 => page_token = Some(t),
@@ -426,9 +440,9 @@ pub fn download(
     height: u32,
 ) -> Result<PathBuf, String> {
     if item.media_file.base_url.is_empty() {
-        return Err(format!(
-            "élément {} sans adresse de téléchargement",
-            item.id
+        return Err(trf(
+            "élément {id} sans adresse de téléchargement",
+            &[("id", &item.id)],
         ));
     }
     // Un `baseUrl` ne s'utilise jamais nu : on demande au plus la taille de l'écran ×2.
@@ -442,12 +456,12 @@ pub fn download(
         .get(&url)
         .set("Authorization", &bearer(token))
         .call()
-        .map_err(|e| explain("téléchargement d'une photo", e))?;
+        .map_err(|e| explain(tr("téléchargement d'une photo"), e))?;
     let path = dir.join(cache_name(item));
     let tmp = path.with_extension("part");
     let mut file = std::fs::File::create(&tmp).map_err(|e| format!("{} : {e}", tmp.display()))?;
     std::io::copy(&mut response.into_reader().take(64 << 20), &mut file)
-        .map_err(|e| format!("téléchargement interrompu : {e}"))?;
+        .map_err(|e| trf("téléchargement interrompu : {error}", &[("error", &e)]))?;
     drop(file);
     std::fs::rename(&tmp, &path).map_err(|e| format!("{} : {e}", path.display()))?;
     Ok(path)
@@ -483,7 +497,7 @@ pub struct ImportOptions {
 
 fn check(cancel: &AtomicBool) -> Result<(), String> {
     if cancel.load(Ordering::SeqCst) {
-        Err("import annulé".into())
+        Err(tr("import annulé").into())
     } else {
         Ok(())
     }
@@ -501,7 +515,7 @@ fn wait_for_redirect(
     loop {
         check(cancel)?;
         if Instant::now() >= deadline {
-            return Err("autorisation non reçue à temps".into());
+            return Err(tr("autorisation non reçue à temps").into());
         }
         let mut stream = match listener.accept() {
             Ok((stream, _)) => stream,
@@ -509,7 +523,7 @@ fn wait_for_redirect(
                 std::thread::sleep(Duration::from_millis(100));
                 continue;
             }
-            Err(e) => return Err(format!("écoute locale : {e}")),
+            Err(e) => return Err(trf("écoute locale : {error}", &[("error", &e)])),
         };
         let _ = stream.set_nonblocking(false);
         let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
@@ -529,17 +543,23 @@ fn wait_for_redirect(
             if state == expected_state {
                 Ok(code)
             } else {
-                Err("redirection inattendue (état différent)".into())
+                Err(tr("redirection inattendue (état différent)").into())
             }
         });
         let message = match &result {
-            Ok(_) => "Autorisation reçue. Vous pouvez fermer cet onglet et revenir à Lightning.",
-            Err(_) => {
-                "L'autorisation a échoué. Vous pouvez fermer cet onglet et réessayer depuis Lightning."
+            Ok(_) => {
+                tr("Autorisation reçue. Vous pouvez fermer cet onglet et revenir à Lightning.")
             }
+            Err(_) => tr(
+                "L'autorisation a échoué. Vous pouvez fermer cet onglet et réessayer depuis Lightning.",
+            ),
+        };
+        let code = match lightning_i18n::lang() {
+            lightning_i18n::Lang::Fr => "fr",
+            lightning_i18n::Lang::En => "en",
         };
         let body = format!(
-            "<!doctype html><html lang=\"fr\"><meta charset=\"utf-8\"><title>Lightning</title>\
+            "<!doctype html><html lang=\"{code}\"><meta charset=\"utf-8\"><title>Lightning</title>\
              <body style=\"font-family:sans-serif;text-align:center;margin-top:20vh\"><h2>{message}</h2></body></html>"
         );
         let _ = write!(
@@ -569,7 +589,8 @@ fn access_token(
             Err(e) => warn!("jeton Google enregistré inutilisable ({e}) : nouvelle autorisation"),
         }
     }
-    let listener = TcpListener::bind("127.0.0.1:0").map_err(|e| format!("écoute locale : {e}"))?;
+    let listener = TcpListener::bind("127.0.0.1:0")
+        .map_err(|e| trf("écoute locale : {error}", &[("error", &e)]))?;
     let port = listener.local_addr().map_err(|e| e.to_string())?.port();
     let redirect_uri = format!("http://127.0.0.1:{port}");
     let verifier = random_token(48).map_err(|e| e.to_string())?;
@@ -584,7 +605,7 @@ fn access_token(
     set(
         status,
         "awaiting_auth",
-        "Autorisez Lightning dans le navigateur",
+        tr("Autorisez Lightning dans le navigateur"),
         url,
     );
     let code = wait_for_redirect(&listener, &state, cancel, opts.auth_timeout)?;
@@ -612,19 +633,20 @@ pub fn import(
     cancel: &AtomicBool,
 ) -> Result<usize, String> {
     if !opts.config.is_configured() {
-        return Err(
-            "identifiants Google absents : renseignez [google] client_id et client_secret".into(),
-        );
+        return Err(tr(
+            "identifiants Google absents : renseignez [google] client_id et client_secret",
+        )
+        .into());
     }
     let token = access_token(opts, status, cancel)?;
     let session = create_session(&opts.endpoints, &token)?;
     if session.picker_uri.is_empty() {
-        return Err("session de sélection sans adresse".into());
+        return Err(tr("session de sélection sans adresse").into());
     }
     set(
         status,
         "awaiting_selection",
-        "Choisissez vos photos dans Google Photos",
+        tr("Choisissez vos photos dans Google Photos"),
         format!("{}/autoclose", session.picker_uri.trim_end_matches('/')),
     );
     let polling = session.polling_config.clone().unwrap_or_default();
@@ -647,7 +669,7 @@ pub fn import(
                 break;
             }
             if Instant::now() >= deadline {
-                return Err("sélection non terminée à temps".to_owned());
+                return Err(tr("sélection non terminée à temps").to_owned());
             }
             if let Some(next) = current
                 .polling_config
@@ -677,7 +699,10 @@ pub fn import(
             set(
                 status,
                 "downloading",
-                format!("Téléchargement {} / {}", i + 1, photos.len()),
+                trf(
+                    "Téléchargement {current} / {total}",
+                    &[("current", &(i + 1)), ("total", &photos.len())],
+                ),
                 "",
             );
             match download(item, &token, &dir, opts.width, opts.height) {
@@ -686,7 +711,7 @@ pub fn import(
             }
         }
         if done == 0 && !photos.is_empty() {
-            return Err("aucune photo n'a pu être téléchargée".to_owned());
+            return Err(tr("aucune photo n'a pu être téléchargée").to_owned());
         }
         info!(photos = done, dossier = %dir.display(), "photos Google importées");
         Ok(done)
@@ -751,13 +776,13 @@ impl Importer {
         done: impl FnOnce(Result<usize, String>) + Send + 'static,
     ) -> Result<(), String> {
         if !opts.config.is_configured() {
-            return Err("identifiants Google absents : renseignez [google] client_id et client_secret dans la configuration".into());
+            return Err(tr("identifiants Google absents : renseignez [google] client_id et client_secret dans la configuration").into());
         }
         if self.running.swap(true, Ordering::SeqCst) {
-            return Err("un import est déjà en cours".into());
+            return Err(tr("un import est déjà en cours").into());
         }
         self.cancel.store(false, Ordering::SeqCst);
-        set(&self.status, "awaiting_auth", "Connexion à Google…", "");
+        set(&self.status, "awaiting_auth", tr("Connexion à Google…"), "");
         let (status, cancel, running) = (
             self.status.clone(),
             self.cancel.clone(),
@@ -768,7 +793,12 @@ impl Importer {
             .spawn(move || {
                 let result = import(&opts, &status, &cancel);
                 match &result {
-                    Ok(n) => set(&status, "idle", format!("{n} photos importées"), ""),
+                    Ok(n) => set(
+                        &status,
+                        "idle",
+                        trf("{n} photos importées", &[("n", &n)]),
+                        "",
+                    ),
                     Err(e) => set(&status, "error", e.clone(), ""),
                 }
                 running.store(false, Ordering::SeqCst);

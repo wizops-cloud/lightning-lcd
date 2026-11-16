@@ -1763,6 +1763,7 @@ dependencies = [
  "kamadak-exif",
  "libheif-rs",
  "lightning-dashboard",
+ "lightning-i18n",
  "lightning-ipc",
  "lightning-lcd",
  "serde",
@@ -1784,6 +1785,7 @@ dependencies = [
  "chrono",
  "fontdue",
  "libc",
+ "lightning-i18n",
  "nvml-wrapper",
  "serde",
  "tiny-skia",
@@ -1796,14 +1798,20 @@ version = "0.1.0"
 dependencies = [
  "gtk4",
  "libadwaita",
+ "lightning-i18n",
  "lightning-ipc",
  "zbus",
 ]
 
 [[package]]
+name = "lightning-i18n"
+version = "0.1.0"
+
+[[package]]
 name = "lightning-ipc"
 version = "0.1.0"
 dependencies = [
+ "lightning-i18n",
  "serde",
  "zbus",
 ]
