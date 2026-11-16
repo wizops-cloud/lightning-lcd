@@ -1,0 +1,61 @@
+# Flatpak de l'application de réglage « Lightning » (lightning-settings) seule.
+#
+# Le démon `lightning daemon` reste un service de l'hôte (accès USB à l'écran) : il
+# s'installe à part (RPM, archive de release ou sources). L'application lui parle sur le bus
+# de session, ainsi qu'au gestionnaire systemd utilisateur pour la page « Service ».
+#
+#   flatpak-builder --user --install-deps-from=flathub --force-clean \
+#       build-flatpak packaging/flatpak/cloud.wizops.Lightning.yml
+#
+# cargo-sources.json se régénère quand Cargo.lock change (flatpak-builder-tools) :
+#   flatpak-cargo-generator.py Cargo.lock -o packaging/flatpak/cargo-sources.json
+id: cloud.wizops.Lightning
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: lightning-settings
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Démon de l'hôte et service systemd utilisateur (état, marche/arrêt, lancement à
+  # l'ouverture de session).
+  - --talk-name=cloud.wizops.Lightning.Daemon
+  - --talk-name=org.freedesktop.systemd1
+  # Couvertures des dossiers du diaporama et vignettes : l'application lit les dossiers que
+  # le démon de l'hôte affiche. En lecture seule ; avec cet accès, le sélecteur de fichiers
+  # renvoie les vrais chemins (et non ceux du portail de documents, illisibles par le démon).
+  - --filesystem=home:ro
+  - --filesystem=/run/media:ro
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/lightning-settings/cargo
+    CARGO_NET_OFFLINE: 'true'
+modules:
+  - name: lightning-settings
+    buildsystem: simple
+    build-commands:
+      - cargo --offline build --release --locked -p lightning-gtk
+      - install -Dm755 target/release/lightning-settings /app/bin/lightning-settings
+      - install -Dm644 packaging/cloud.wizops.Lightning.desktop
+        /app/share/applications/cloud.wizops.Lightning.desktop
+      - install -Dm644 packaging/cloud.wizops.Lightning.metainfo.xml
+        /app/share/metainfo/cloud.wizops.Lightning.metainfo.xml
+      - install -Dm644 packaging/icons/cloud.wizops.Lightning.svg
+        /app/share/icons/hicolor/scalable/apps/cloud.wizops.Lightning.svg
+      - install -Dm644 packaging/icons/cloud.wizops.Lightning-symbolic.svg
+        /app/share/icons/hicolor/symbolic/apps/cloud.wizops.Lightning-symbolic.svg
+      - install -Dm644 LICENSE /app/share/licenses/cloud.wizops.Lightning/LICENSE
+    sources:
+      - type: dir
+        path: ../..
+        skip:
+          - target
+          - .git
+          - legacy
+          - docs/screenshots
+      - cargo-sources.json

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 WizOps -->
+<component type="desktop-application">
+  <id>cloud.wizops.Lightning</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+
+  <name>Lightning</name>
+  <summary>Configure the LCD screen of the MSI RTX 5090 Lightning Z</summary>
+  <summary xml:lang="fr">Régler l'écran LCD de la MSI RTX 5090 Lightning Z</summary>
+
+  <developer id="cloud.wizops">
+    <name>WizOps</name>
+  </developer>
+
+  <description>
+    <p>
+      Lightning drives the built-in LCD screen of the MSI RTX 5090 Lightning Z graphics card
+      through the lightning daemon: a live PC status dashboard, a picture, a video, a photo
+      slideshow or a solid color.
+    </p>
+    <p xml:lang="fr">
+      Lightning pilote l'écran LCD intégré à la MSI RTX 5090 Lightning Z par l'intermédiaire du
+      démon lightning : tableau de bord de l'état du PC en direct, image, vidéo, diaporama de
+      photos ou couleur unie.
+    </p>
+    <ul>
+      <li>Live preview of what the screen shows</li>
+      <li xml:lang="fr">Aperçu en direct de ce qu'affiche l'écran</li>
+      <li>Slideshow folders, order, duration and transitions</li>
+      <li xml:lang="fr">Dossiers du diaporama, ordre, durée et transitions</li>
+      <li>Dashboard panels and their order</li>
+      <li xml:lang="fr">Panneaux du tableau de bord et leur ordre</li>
+      <li>Brightness, orientation, frame rate and service management</li>
+      <li xml:lang="fr">Luminosité, orientation, cadence et gestion du service</li>
+    </ul>
+    <p>
+      The application never touches the hardware: it requires the lightning daemon, installed on
+      the host as a systemd user service. Independent project, not affiliated with MSI or NVIDIA.
+    </p>
+    <p xml:lang="fr">
+      L'application ne touche jamais au matériel : elle demande le démon lightning, installé sur
+      le système comme service systemd utilisateur. Projet indépendant, sans lien avec MSI ni
+      NVIDIA.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">cloud.wizops.Lightning.desktop</launchable>
+  <icon type="stock">cloud.wizops.Lightning</icon>
+
+  <url type="homepage">https://github.com/wizops-cloud/lightning-lcd</url>
+  <url type="bugtracker">https://github.com/wizops-cloud/lightning-lcd/issues</url>
+  <url type="vcs-browser">https://github.com/wizops-cloud/lightning-lcd</url>
+  <url type="contribute">https://github.com/wizops-cloud/lightning-lcd/blob/main/CONTRIBUTING.md</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Home page with the live preview of the dashboard</caption>
+      <caption xml:lang="fr">Accueil avec l'aperçu en direct du tableau de bord</caption>
+      <image>https://raw.githubusercontent.com/wizops-cloud/lightning-lcd/main/docs/screenshots/accueil-sombre.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Choosing what the screen shows</caption>
+      <caption xml:lang="fr">Choix du contenu affiché</caption>
+      <image>https://raw.githubusercontent.com/wizops-cloud/lightning-lcd/main/docs/screenshots/contenu-sombre.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Slideshow folders</caption>
+      <caption xml:lang="fr">Dossiers du diaporama</caption>
+      <image>https://raw.githubusercontent.com/wizops-cloud/lightning-lcd/main/docs/screenshots/diaporama-clair.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Adaptive layout on a narrow window</caption>
+      <caption xml:lang="fr">Disposition adaptée à une fenêtre étroite</caption>
+      <image>https://raw.githubusercontent.com/wizops-cloud/lightning-lcd/main/docs/screenshots/accueil-etroit.png</image>
+    </screenshot>
+  </screenshots>
+
+  <content_rating type="oars-1.1"/>
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+
+  <categories>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+  <keywords>
+    <keyword>LCD</keyword>
+    <keyword>GPU</keyword>
+    <keyword>dashboard</keyword>
+    <keyword xml:lang="fr">écran</keyword>
+    <keyword xml:lang="fr">tableau de bord</keyword>
+  </keywords>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#f2b441</color>
+    <color type="primary" scheme_preference="dark">#0d1017</color>
+  </branding>
+
+  <releases>
+    <release version="0.1.0" date="2026-11-16">
+      <description>
+        <p>First release: dashboard, image, video, slideshow with Google Photos import, and the GNOME settings application.</p>
+      </description>
+    </release>
+  </releases>
+</component>

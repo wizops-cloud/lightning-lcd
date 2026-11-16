@@ -62,6 +62,27 @@ sudo dnf copr enable <compte>/lightning-lcd && sudo dnf install lightning-lcd li
 Pour une nouvelle version : mettre à jour `Version`, `%changelog` et, si `Cargo.lock` a changé,
 la ligne `License` (résumé affiché par `%{cargo_license_summary}` pendant la construction).
 
+### Flatpak (application seule)
+
+`packaging/flatpak/cloud.wizops.Lightning.yml` empaquette l'application « Lightning » (runtime
+GNOME 51). Le démon, qui accède à l'écran en USB, reste installé sur le système (RPM, archive ou
+sources) : l'application lui parle sur le bus de session (`cloud.wizops.Lightning.Daemon`) et
+pilote le service par `org.freedesktop.systemd1`. Elle lit le dossier personnel en lecture seule
+(couvertures du diaporama, vrais chemins renvoyés par le sélecteur de fichiers).
+
+```sh
+sudo dnf install -y flatpak-builder
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak-builder --user --install-deps-from=flathub --install --force-clean \
+    build-flatpak packaging/flatpak/cloud.wizops.Lightning.yml
+flatpak run cloud.wizops.Lightning
+```
+
+Les métadonnées AppStream sont dans `packaging/cloud.wizops.Lightning.metainfo.xml`
+(`appstreamcli validate --no-net` ; les URL des captures ne répondent que si le dépôt est public).
+Quand `Cargo.lock` change, régénérer `packaging/flatpak/cargo-sources.json` avec
+`flatpak-cargo-generator.py` ([flatpak-builder-tools](https://github.com/flatpak/flatpak-builder-tools)).
+
 ### Depuis les sources
 
 Prérequis :
@@ -303,7 +324,7 @@ adresse HTTP, comportement à l'arrêt).
 | `crates/lightning` | Binaire `lightning` : commandes directes, démon D-Bus, `ctl`, diaporama, sorties `lcd` / `window` / `http` |
 | `crates/lightning-ipc` | Interface D-Bus partagée (noms, proxy zbus) |
 | `crates/lightning-gtk` | Application GNOME `lightning-settings` (GTK 4 + libadwaita) |
-| `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration, `install.sh`, paquet RPM (`rpm/`) |
+| `packaging/` | Règle udev, service systemd utilisateur, `.desktop`, icône, exemple de configuration, `install.sh`, paquet RPM (`rpm/`), Flatpak (`flatpak/`), AppStream |
 | `docs/PROTOCOL.md` | Protocole et historique de la rétro-ingénierie |
 | `legacy/` | Scripts Python d'origine (référence historique) |
 

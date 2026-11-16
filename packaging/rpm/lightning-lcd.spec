@@ -31,6 +31,7 @@ BuildRequires:  pkgconfig(gtk4) >= 4.14
 BuildRequires:  pkgconfig(libadwaita-1) >= 1.5
 BuildRequires:  systemd-rpm-macros
 BuildRequires:  desktop-file-utils
+BuildRequires:  appstream
 %if %{with check}
 BuildRequires:  dbus-daemon
 %endif
@@ -83,6 +84,8 @@ sed 's|^ExecStart=.*|ExecStart=%{_bindir}/lightning daemon|; /^#   /d' \
 chmod 0644 %{buildroot}%{_userunitdir}/lightning-dashboard.service
 install -Dpm0644 packaging/cloud.wizops.Lightning.desktop \
     %{buildroot}%{_datadir}/applications/cloud.wizops.Lightning.desktop
+install -Dpm0644 packaging/cloud.wizops.Lightning.metainfo.xml \
+    %{buildroot}%{_metainfodir}/cloud.wizops.Lightning.metainfo.xml
 install -Dpm0644 packaging/icons/cloud.wizops.Lightning.svg \
     %{buildroot}%{_datadir}/icons/hicolor/scalable/apps/cloud.wizops.Lightning.svg
 install -Dpm0644 packaging/icons/cloud.wizops.Lightning-symbolic.svg \
@@ -90,6 +93,7 @@ install -Dpm0644 packaging/icons/cloud.wizops.Lightning-symbolic.svg \
 
 %check
 desktop-file-validate %{buildroot}%{_datadir}/applications/cloud.wizops.Lightning.desktop
+appstreamcli validate --no-net %{buildroot}%{_metainfodir}/cloud.wizops.Lightning.metainfo.xml
 %if %{with check}
 %cargo_test
 %endif
@@ -114,6 +118,7 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/cloud.wizops.Lightnin
 %doc README.md
 %{_bindir}/lightning-settings
 %{_datadir}/applications/cloud.wizops.Lightning.desktop
+%{_metainfodir}/cloud.wizops.Lightning.metainfo.xml
 %{_datadir}/icons/hicolor/scalable/apps/cloud.wizops.Lightning.svg
 %{_datadir}/icons/hicolor/symbolic/apps/cloud.wizops.Lightning-symbolic.svg
 
