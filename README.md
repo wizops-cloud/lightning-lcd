@@ -253,6 +253,13 @@ display.show_rgb(&pixels)?; // 1280 × 800 × 3 octets
 - Rotation : 0 et 180° seulement (logicielle) ; la commande `rotate` du firmware n'est pas utilisée.
 - Le retour à l'animation MSI d'origine demande de couper l'alimentation de l'écran.
 
+## Contribuer
+
+Construction, tests, style des commits et règles de sécurité du matériel :
+[CONTRIBUTING.md](CONTRIBUTING.md). Les bogues et demandes passent par les
+[modèles d'issue](https://github.com/wizops-cloud/lightning-lcd/issues/new/choose) ; une
+vulnérabilité se signale en privé, voir [SECURITY.md](SECURITY.md).
+
 ## Licence et avertissements
 
 Copyright © 2026 WizOps — [wizops.fr](https://wizops.fr).

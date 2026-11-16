@@ -1,0 +1,32 @@
+name: Proposer une amélioration
+description: Une idée de fonction, de panneau, de matériel à prendre en charge…
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Besoin
+      description: Le problème à résoudre ou l'usage visé, plutôt que la solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: Proposition
+      description: Ce que vous imaginez (interface, commande, option de configuration…).
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives envisagées
+  - type: input
+    id: materiel
+    attributes:
+      label: Matériel concerné
+      description: "Pour un autre écran ou une autre carte : modèle et sortie de `lsusb -d 0db0:`."
+  - type: checkboxes
+    id: securite
+    attributes:
+      label: Sécurité du matériel
+      options:
+        - label: La demande n'implique pas d'écrire dans la mémoire flash de l'écran.
+          required: true
