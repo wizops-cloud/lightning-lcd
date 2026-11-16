@@ -907,7 +907,9 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
             schematic_clamp.upcast_ref(),
             section(
                 "Panneaux",
-                Some("Activez-les et réordonnez-les ; l'ordre s'applique au sein de chaque rangée"),
+                Some(
+                    "Activez-les, puis glissez-les ou utilisez les flèches ; l'ordre s'applique au sein de chaque rangée",
+                ),
             )
             .upcast_ref(),
             panel_list.upcast_ref(),

@@ -189,6 +189,9 @@ pub const COMMON_CSS: &str = r#"
 .schematic .tile.tile-memory { border-left-color: #54a6ff; }
 .schematic .tile.tile-disks { border-left-color: #b289ff; }
 .schematic .tile.tile-network { border-left-color: #2dd4bf; }
+.drag-handle { opacity: 0.55; }
+row:drop(active) { box-shadow: inset 0 0 0 2px @accent_color; }
+row.dragged { opacity: 0.4; }
 .panel-dot { min-width: 10px; min-height: 10px; border-radius: 10px; }
 .dot-gpu { background: #76e05b; }
 .dot-cpu { background: #ff8a4c; }

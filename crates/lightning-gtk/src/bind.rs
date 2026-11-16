@@ -1096,6 +1096,23 @@ pub fn moved(enabled: &[String], name: &str, delta: i32) -> Vec<String> {
     list
 }
 
+/// Liste après glisser-déposer : `name` prend la place de `target`.
+///
+/// En descendant, le panneau se place après la cible ; en montant, avant.
+/// Sans effet si l'un des deux n'est pas activé.
+pub fn dropped(enabled: &[String], name: &str, target: &str) -> Vec<String> {
+    let mut list = enabled.to_vec();
+    let (Some(from), Some(to)) = (
+        list.iter().position(|w| w == name),
+        list.iter().position(|w| w == target),
+    ) else {
+        return list;
+    };
+    let item = list.remove(from);
+    list.insert(to, item);
+    list
+}
+
 /// Liste après activation ou désactivation d'un panneau.
 pub fn toggled(enabled: &[String], name: &str, on: bool) -> Vec<String> {
     let mut list: Vec<String> = enabled.iter().filter(|w| *w != name).cloned().collect();
@@ -1155,7 +1172,7 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         ui.schematic.append(&empty);
     }
 
-    // Lignes : pastille de couleur, monter, descendre, interrupteur.
+    // Lignes : poignée, pastille de couleur, monter, descendre, interrupteur.
     ui.panel_list.remove_all();
     let rows = panel_rows(widgets);
     let enabled_count = rows.iter().filter(|(_, on)| *on).count();
@@ -1173,6 +1190,17 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
         dot.add_css_class(&format!("dot-{name}"));
         dot.set_valign(gtk::Align::Center);
         row.add_prefix(&dot);
+        // Poignée à gauche : les panneaux activés se réordonnent par glisser-déposer.
+        // Invisible sur les autres lignes, pour garder les titres alignés.
+        let handle = gtk::Image::from_icon_name("list-drag-handle-symbolic");
+        handle.add_css_class("drag-handle");
+        if *on {
+            handle.set_tooltip_text(Some("Glisser pour réordonner"));
+            attach_drag(ui, remote, &row, name);
+        } else {
+            handle.set_opacity(0.0);
+        }
+        row.add_prefix(&handle);
         for (icon, delta, tip, sensitive) in [
             ("go-up-symbolic", -1, "Monter", *on && index > 0),
             (
@@ -1217,6 +1245,48 @@ fn apply_panels(ui: &Rc<Ui>, remote: &Remote, widgets: &[String]) {
     }
     *ui.shown_panels.borrow_mut() = Some(widgets.to_vec());
     ui.updating.set(was);
+}
+
+/// Glisser-déposer d'une ligne de panneau activé sur une autre.
+fn attach_drag(ui: &Rc<Ui>, remote: &Remote, row: &adw::ActionRow, name: &'static str) {
+    let source = gtk::DragSource::new();
+    source.set_actions(gdk::DragAction::MOVE);
+    source.set_content(Some(&gdk::ContentProvider::for_value(&name.to_value())));
+    source.connect_drag_begin(|source, _| {
+        // Aperçu : la ligne elle-même, saisie là où le pointeur l'a prise.
+        let Some(row) = source.widget() else { return };
+        let paintable = gtk::WidgetPaintable::new(Some(&row));
+        let (x, y) = source
+            .current_event()
+            .and_then(|event| event.position())
+            .unwrap_or((0.0, 0.0));
+        source.set_icon(Some(&paintable), x as i32, y as i32);
+        row.add_css_class("dragged");
+    });
+    source.connect_drag_end(|source, _, _| {
+        if let Some(row) = source.widget() {
+            row.remove_css_class("dragged");
+        }
+    });
+    row.add_controller(source);
+
+    let target = gtk::DropTarget::new(glib::Type::STRING, gdk::DragAction::MOVE);
+    let (ui, remote) = (ui.clone(), remote.clone());
+    target.connect_drop(move |_, value, _, _| {
+        let Ok(dragged) = value.get::<String>() else {
+            return false;
+        };
+        let current = ui.state.borrow().widgets.clone();
+        let list = dropped(&current, &dragged, name);
+        if list == current {
+            return false;
+        }
+        // Les lignes sont reconstruites : pas pendant le traitement du dépôt.
+        let (ui, remote) = (ui.clone(), remote.clone());
+        glib::idle_add_local_once(move || send_widgets(&ui, &remote, list));
+        true
+    });
+    row.add_controller(target);
 }
 
 /// État du service : page Service et écran « hors service ».
@@ -1360,6 +1430,29 @@ mod tests {
         assert_eq!(moved(&enabled, "cpu", -1), enabled, "déjà en tête");
         assert_eq!(moved(&enabled, "gpu", 1), enabled, "déjà en queue");
         assert_eq!(moved(&enabled, "memory", 1), enabled, "panneau désactivé");
+
+        assert_eq!(
+            dropped(&enabled, "cpu", "gpu"),
+            list(&["network", "gpu", "cpu"]),
+            "vers le bas : après la cible"
+        );
+        assert_eq!(
+            dropped(&enabled, "gpu", "cpu"),
+            list(&["gpu", "cpu", "network"]),
+            "vers le haut : avant la cible"
+        );
+        assert_eq!(
+            dropped(&enabled, "network", "gpu"),
+            list(&["cpu", "gpu", "network"])
+        );
+        assert_eq!(dropped(&enabled, "cpu", "cpu"), enabled, "sur elle-même");
+        assert_eq!(dropped(&enabled, "memory", "cpu"), enabled, "désactivé");
+        assert_eq!(
+            dropped(&enabled, "cpu", "disks"),
+            enabled,
+            "cible désactivée"
+        );
+        assert_eq!(dropped(&enabled, "inconnu", "cpu"), enabled, "nom inconnu");
 
         assert_eq!(
             toggled(&enabled, "memory", true),

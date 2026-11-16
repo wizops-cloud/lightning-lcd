@@ -64,7 +64,7 @@ au matériel : elle pilote le démon par D-Bus et le service par l'API D-Bus de 
 | Accueil | grand aperçu en direct de l'écran, pastilles d'état (liaison, contenu, cadence, temps de rendu, luminosité), cartes de contenu, luminosité |
 | Contenu | cartes illustrées (tableau de bord, image, vidéo, diaporama, couleur, animation d'origine) et options du contenu choisi |
 | Diaporama | tuiles des dossiers avec couverture et nombre de photos, import Google Photos, réglages de lecture |
-| Tableau de bord | panneaux affichés, ordre (boutons monter/descendre) et schéma de la disposition |
+| Tableau de bord | panneaux affichés, ordre (glisser-déposer ou boutons monter/descendre) et schéma de la disposition |
 | Réglages | luminosité, orientation, cadence, comportement à l'arrêt, aperçu HTTP |
 | Service | état, marche/arrêt, redémarrage, lancement à l'ouverture de session |
 
