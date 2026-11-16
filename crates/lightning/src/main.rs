@@ -9,6 +9,7 @@ mod media;
 mod mjpeg;
 mod mpris;
 mod outputs;
+mod secrets;
 mod slideshow;
 mod text;
 
@@ -454,7 +455,11 @@ fn run_daemon(
 ) -> Result<()> {
     let (mut engine, handle) = daemon::Engine::new(
         daemon::EngineOptions {
-            google: daemon::GoogleRuntime::standard(config_path.as_deref()),
+            google: daemon::GoogleRuntime {
+                // Jamais le trousseau réel en démonstration.
+                keyring: !demo,
+                ..daemon::GoogleRuntime::standard(config_path.as_deref())
+            },
             demo,
             config,
             config_path,

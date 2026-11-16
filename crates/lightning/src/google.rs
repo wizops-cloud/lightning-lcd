@@ -24,6 +24,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tracing::{debug, info, warn};
 
+use crate::secrets::TokenStorage;
+
 /// Portée OAuth de la Picker API (lecture des éléments choisis par l'utilisateur).
 pub const SCOPE: &str = "https://www.googleapis.com/auth/photospicker.mediaitems.readonly";
 
@@ -462,42 +464,16 @@ pub fn cache_root() -> PathBuf {
     base.join("lightning/google-photos")
 }
 
-#[derive(Serialize, Deserialize, Default)]
-struct Stored {
-    refresh_token: String,
-}
-
-fn load_refresh_token(path: &Path) -> Option<String> {
-    let stored: Stored = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
-    (!stored.refresh_token.is_empty()).then_some(stored.refresh_token)
-}
-
-/// Enregistre le jeton de rafraîchissement, lisible par l'utilisateur seul.
-fn save_refresh_token(path: &Path, token: &str) -> std::io::Result<()> {
-    use std::os::unix::fs::OpenOptionsExt;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-    }
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .mode(0o600)
-        .open(path)?;
-    let stored = Stored {
-        refresh_token: token.to_owned(),
-    };
-    file.write_all(serde_json::to_string_pretty(&stored)?.as_bytes())
-}
-
 // ------------------------------------------------------------------ flux
 
 /// Paramètres d'un import.
 pub struct ImportOptions {
     pub config: GoogleConfig,
     pub endpoints: Endpoints,
-    /// Fichier du jeton de rafraîchissement.
+    /// Fichier du jeton de rafraîchissement (repli quand le trousseau manque).
     pub token_path: PathBuf,
+    /// Utiliser le trousseau de la session (Secret Service).
+    pub keyring: bool,
     pub cache_root: PathBuf,
     pub width: u32,
     pub height: u32,
@@ -581,7 +557,12 @@ fn access_token(
     status: &SharedStatus,
     cancel: &AtomicBool,
 ) -> Result<String, String> {
-    if let Some(stored) = load_refresh_token(&opts.token_path) {
+    let storage = if opts.keyring {
+        TokenStorage::standard(&opts.token_path)
+    } else {
+        TokenStorage::file_only(&opts.token_path)
+    };
+    if let Some(stored) = storage.load() {
         match refresh(&opts.endpoints, &opts.config, &stored) {
             Ok(tokens) => return Ok(tokens.access_token),
             // Jeton révoqué ou expiré : on redemande l'autorisation.
@@ -615,11 +596,10 @@ fn access_token(
         &redirect_uri,
     )?;
     match &tokens.refresh_token {
-        Some(token) => {
-            if let Err(e) = save_refresh_token(&opts.token_path, token) {
-                warn!("jeton Google non enregistré : {e}");
-            }
-        }
+        Some(token) => match storage.save(token) {
+            Ok(place) => info!("jeton Google enregistré ({place})"),
+            Err(e) => warn!("jeton Google non enregistré : {e}"),
+        },
         None => debug!("pas de jeton de rafraîchissement dans la réponse"),
     }
     Ok(tokens.access_token)
@@ -1136,6 +1116,7 @@ mod tests {
             },
             endpoints: mock.endpoints(),
             token_path: dir.join("google.json"),
+            keyring: false,
             cache_root: dir.join("cache"),
             width: 1280,
             height: 800,
@@ -1233,7 +1214,7 @@ mod tests {
             & 0o777;
         assert_eq!(mode, 0o600);
         assert_eq!(
-            load_refresh_token(&opts.token_path).as_deref(),
+            TokenStorage::file_only(&opts.token_path).load().as_deref(),
             Some("REFRESH")
         );
 
@@ -1305,7 +1286,9 @@ mod tests {
         assert!(!opts.token_path.exists());
 
         // Jeton enregistré révoqué : on retombe sur l'autorisation, annulable.
-        save_refresh_token(&opts.token_path, "REVOKED").unwrap();
+        TokenStorage::file_only(&opts.token_path)
+            .save("REVOKED")
+            .unwrap();
         let importer = Importer::new(true);
         assert_eq!(importer.status().state, "idle");
         let (tx, rx) = std::sync::mpsc::channel();

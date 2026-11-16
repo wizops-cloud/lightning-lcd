@@ -184,6 +184,8 @@ pub struct EngineOptions {
 pub struct GoogleRuntime {
     pub endpoints: google::Endpoints,
     pub token_path: std::path::PathBuf,
+    /// Jeton dans le trousseau de la session (sinon fichier seul).
+    pub keyring: bool,
     pub cache_root: std::path::PathBuf,
 }
 
@@ -197,6 +199,7 @@ impl GoogleRuntime {
         Self {
             endpoints: google::Endpoints::default(),
             token_path: dir.join("google.json"),
+            keyring: true,
             cache_root: google::cache_root(),
         }
     }
@@ -788,6 +791,7 @@ impl Engine {
                         config: self.cfg.google.clone(),
                         endpoints: self.google.endpoints.clone(),
                         token_path: self.google.token_path.clone(),
+                        keyring: self.google.keyring,
                         cache_root: self.google.cache_root.clone(),
                         width: WIDTH,
                         height: HEIGHT,
@@ -1098,6 +1102,7 @@ pub(crate) mod tests {
                 google: GoogleRuntime {
                     endpoints: google::Endpoints::default(),
                     token_path: dir.join("google.json"),
+                    keyring: false,
                     cache_root: dir.join("google-cache"),
                 },
             },

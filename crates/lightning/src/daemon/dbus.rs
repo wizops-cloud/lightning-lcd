@@ -465,16 +465,42 @@ pub(crate) mod tests {
     use std::process::{Child, Command, Stdio};
 
     /// Bus de session privé (`dbus-daemon`), arrêté à la destruction.
+    ///
+    /// Sans activation de services : un nom absent (trousseau…) reste absent au
+    /// lieu de lancer le programme correspondant de la machine.
     pub struct PrivateBus {
         child: Child,
         pub address: String,
+        dir: std::path::PathBuf,
     }
 
     impl PrivateBus {
         /// `None` si `dbus-daemon` n'est pas installé : le test est alors sauté.
         pub fn start() -> Option<Self> {
+            static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+            let dir = std::env::temp_dir().join(format!(
+                "lightning-bus-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+            ));
+            std::fs::create_dir_all(&dir).ok()?;
+            let config = dir.join("bus.conf");
+            std::fs::write(
+                &config,
+                format!(
+                    "<!DOCTYPE busconfig PUBLIC \"-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN\"\n \
+                     \"http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd\">\n\
+                     <busconfig><type>session</type><listen>unix:dir={}</listen>\
+                     <auth>EXTERNAL</auth><policy context=\"default\">\
+                     <allow send_destination=\"*\" eavesdrop=\"true\"/><allow eavesdrop=\"true\"/>\
+                     <allow own=\"*\"/></policy></busconfig>\n",
+                    dir.display()
+                ),
+            )
+            .ok()?;
             let mut child = Command::new("dbus-daemon")
-                .args(["--session", "--nofork", "--print-address"])
+                .arg(format!("--config-file={}", config.display()))
+                .args(["--nofork", "--print-address"])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())
                 .spawn()
@@ -488,7 +514,11 @@ pub(crate) mod tests {
                 let _ = child.kill();
                 return None;
             }
-            Some(Self { child, address })
+            Some(Self {
+                child,
+                address,
+                dir,
+            })
         }
 
         pub fn connect(&self) -> Connection {
@@ -503,6 +533,7 @@ pub(crate) mod tests {
         fn drop(&mut self) {
             let _ = self.child.kill();
             let _ = self.child.wait();
+            let _ = std::fs::remove_dir_all(&self.dir);
         }
     }
 

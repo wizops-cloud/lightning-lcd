@@ -236,7 +236,11 @@ Il faut créer une fois votre propre client OAuth :
    puis sur le sélecteur de Google Photos. Une fois la sélection validée, les photos sont
    téléchargées et le diaporama les prend en compte.
 
-Le jeton de rafraîchissement est conservé dans `~/.config/lightning/google.json` (mode 0600).
+Le jeton de rafraîchissement est rangé dans le trousseau de la session (Secret Service : GNOME
+Trousseau, KeePassXC…), élément « Lightning : accès à Google Photos ». Sans trousseau joignable
+ou s'il est verrouillé (service lancé hors session graphique), il reste dans
+`~/.config/lightning/google.json` (mode 0600) ; un ancien fichier est déplacé dans le trousseau dès
+qu'il répond. Le jeton n'apparaît jamais dans les journaux.
 « Vider le cache » supprime les photos importées.
 
 ## Horloge et lecture en cours
