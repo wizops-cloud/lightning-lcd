@@ -192,7 +192,13 @@ fn worker(shared: &Shared, opts: &LcdOptions, stats: &SharedStats) {
                     ever_connected = true;
                     stats.set_lcd(
                         LcdState::Connected,
-                        lightning_i18n::trf("mode {mode}", &[("mode", &format!("{:?}", d.mode()))]),
+                        lightning_i18n::trf(
+                            "mode {mode}, {id}",
+                            &[
+                                ("mode", &format!("{:?}", d.mode())),
+                                ("id", &crate::usb_label(d.pid())),
+                            ],
+                        ),
                     );
                     display = Some(d);
                 }

@@ -10,7 +10,7 @@ use tracing::{debug, info, warn};
 use crate::error::{Error, Result};
 use crate::frame::{self, AUTH_DEV_MAGIC, AUTH_HOST_MAGIC, FORMAT_JPEG, FRAME_MAGIC};
 use crate::hid::HidControl;
-use crate::{HEIGHT, PID, VID, WIDTH, rsa};
+use crate::{HEIGHT, PID, WIDTH, device, rsa};
 
 const IFACE: u8 = 0;
 const EP_OUT: u8 = 0x01;
@@ -77,6 +77,8 @@ pub struct Display {
     frame_id: u16,
     fresh: bool,
     reconnects: u64,
+    /// Identifiant USB du produit ouvert.
+    pid: u16,
 }
 
 impl Display {
@@ -103,6 +105,7 @@ impl Display {
             frame_id: 0,
             fresh: false,
             reconnects: 0,
+            pid: PID,
         };
         if display.opts.extend {
             match display.ensure_extended() {
@@ -132,6 +135,11 @@ impl Display {
     /// Fréquence de rafraîchissement annoncée par l'écran.
     pub fn fps(&self) -> u32 {
         self.fps
+    }
+
+    /// Identifiant USB du produit ouvert (`0x7881` sauf option explicite).
+    pub fn pid(&self) -> u16 {
+        self.pid
     }
 
     /// Nombre de reconnexions effectuées depuis l'ouverture.
@@ -182,7 +190,14 @@ impl Display {
     }
 
     fn try_connect(&mut self) -> Result<()> {
-        let (handle, key) = find_device(self.opts.wait)?;
+        let (handle, key, pid) = find_device(self.opts.wait)?;
+        if pid != PID {
+            debug!(
+                id = device::usb_id(pid),
+                "écran non testé, accepté par option"
+            );
+        }
+        self.pid = pid;
         handle.claim_interface(IFACE).map_err(map_access)?;
         self.fresh = false;
         if auth_cache_read().as_deref() == Some(key.as_str()) {
@@ -327,22 +342,29 @@ fn map_access(e: rusb::Error) -> Error {
     }
 }
 
-/// Attend l'écran et l'ouvre ; renvoie aussi la clé `bus:adresse` de l'énumération.
-fn find_device(wait: Duration) -> Result<(DeviceHandle<GlobalContext>, String)> {
+/// Attend l'écran et l'ouvre ; renvoie aussi la clé `bus:adresse` de
+/// l'énumération et l'identifiant du produit (choix : [`device::select`]).
+fn find_device(wait: Duration) -> Result<(DeviceHandle<GlobalContext>, String, u16)> {
     let deadline = Instant::now() + wait;
+    let policy = device::policy();
     loop {
-        for device in GlobalContext::default().devices()?.iter() {
-            let Ok(desc) = device.device_descriptor() else {
-                continue;
-            };
-            if desc.vendor_id() == VID && desc.product_id() == PID {
-                let key = format!("{}:{}", device.bus_number(), device.address());
-                match device.open() {
-                    Ok(handle) => return Ok((handle, key)),
-                    Err(rusb::Error::Access) => return Err(Error::UsbPermissionDenied),
-                    // Périphérique en cours de réénumération : on réessaie.
-                    Err(e) => debug!("ouverture USB impossible : {e}"),
-                }
+        let list = GlobalContext::default().devices()?;
+        let devices: Vec<_> = list
+            .iter()
+            .filter_map(|d| {
+                let desc = d.device_descriptor().ok()?;
+                Some((d, (desc.vendor_id(), desc.product_id())))
+            })
+            .collect();
+        let ids: Vec<(u16, u16)> = devices.iter().map(|(_, id)| *id).collect();
+        if let Some(index) = device::select(&ids, policy) {
+            let (device, (_, pid)) = &devices[index];
+            let key = format!("{}:{}", device.bus_number(), device.address());
+            match device.open() {
+                Ok(handle) => return Ok((handle, key, *pid)),
+                Err(rusb::Error::Access) => return Err(Error::UsbPermissionDenied),
+                // Périphérique en cours de réénumération : on réessaie.
+                Err(e) => debug!("ouverture USB impossible : {e}"),
             }
         }
         if Instant::now() >= deadline {

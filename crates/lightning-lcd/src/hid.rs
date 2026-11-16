@@ -15,12 +15,11 @@ use serde::Deserialize;
 use tracing::{debug, trace};
 
 use crate::error::{Error, Result};
-use crate::frame;
+use crate::{device, frame};
 
 /// Délai maximal d'attente d'une réponse (deux périodes du firmware).
 pub const DEFAULT_TIMEOUT: Duration = Duration::from_secs(9);
 const REPEAT_PERIOD: Duration = Duration::from_millis(100);
-const HID_ID: &str = "0003:00000DB0:00007881";
 
 /// État renvoyé par le firmware (`POST conn`).
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -81,24 +80,35 @@ impl Status {
 pub struct HidControl {
     file: File,
     path: PathBuf,
+    pid: u16,
 }
 
 impl HidControl {
-    /// Cherche le nœud hidraw de l'écran.
-    pub fn find() -> Option<PathBuf> {
-        let entries = std::fs::read_dir("/sys/class/hidraw").ok()?;
-        for entry in entries.flatten() {
-            let uevent = entry.path().join("device/uevent");
-            if std::fs::read_to_string(uevent).is_ok_and(|s| s.contains(HID_ID)) {
-                return Some(Path::new("/dev").join(entry.file_name()));
-            }
-        }
-        None
+    /// Cherche le nœud hidraw de l'écran (identifiants acceptés par
+    /// [`device::policy`], même choix que le canal USB) ; renvoie aussi son PID.
+    pub fn find() -> Option<(PathBuf, u16)> {
+        let entries: Vec<_> = std::fs::read_dir("/sys/class/hidraw")
+            .ok()?
+            .flatten()
+            .filter_map(|entry| {
+                let uevent = std::fs::read_to_string(entry.path().join("device/uevent")).ok()?;
+                Some((entry.file_name(), device::parse_hid_id(&uevent)?))
+            })
+            .collect();
+        let ids: Vec<(u16, u16)> = entries.iter().map(|(_, id)| *id).collect();
+        let index = device::select(&ids, device::policy())?;
+        let (name, (_, pid)) = &entries[index];
+        Some((Path::new("/dev").join(name), *pid))
+    }
+
+    /// Identifiant USB du produit (`0x7881` sauf option explicite).
+    pub fn pid(&self) -> u16 {
+        self.pid
     }
 
     /// Ouvre le canal HID de l'écran.
     pub fn open() -> Result<Self> {
-        let path = Self::find().ok_or(Error::HidNotFound)?;
+        let (path, pid) = Self::find().ok_or(Error::HidNotFound)?;
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -107,7 +117,7 @@ impl HidControl {
                 ErrorKind::PermissionDenied => Error::PermissionDenied(path.clone()),
                 _ => Error::Io(e),
             })?;
-        Ok(Self { file, path })
+        Ok(Self { file, path, pid })
     }
 
     fn readable(&self, timeout: Duration) -> Result<bool> {

@@ -31,6 +31,9 @@ preview_rotation = 0
 # À l'arrêt : "keep" (dernière image), "blank" (écran noir « arrêté »),
 # "restore" (rend la main au firmware : animation MSI d'origine).
 on_exit = "keep"
+# Accepter aussi les écrans USB 0db0:7880 à 0db0:7919, déclarés par le pilote Windows
+# mais jamais testés (défaut : 0db0:7881 seul). Équivaut à --any-supported-pid.
+any_supported_pid = false
 
 # Contenu affiché par le démon (`lightning daemon`), modifiable à chaud depuis
 # l'application de réglage ou `lightning ctl`.

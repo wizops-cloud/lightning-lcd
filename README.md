@@ -104,7 +104,7 @@ cargo build --release
 install -Dm755 target/release/lightning ~/.local/bin/lightning
 install -Dm755 target/release/lightning-settings ~/.local/bin/lightning-settings
 
-# Screen access without root (USB + hidraw of 0db0:7881 only)
+# Screen access without root (USB + hidraw of screens 0db0:7880 to 0db0:7919)
 sudo install -m644 packaging/70-msi-lightning-lcd.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger --attr-match=idVendor=0db0 --attr-match=idProduct=7881
 
@@ -350,6 +350,19 @@ behavior on exit).
 let mut display = lightning_lcd::Display::open()?;
 display.show_rgb(&pixels)?; // 1280 × 800 × 3 bytes
 ```
+
+## Compatible hardware
+
+| USB ID | Card | Status |
+|---|---|---|
+| `0db0:7881` | MSI GeForce RTX 5090 Lightning Z | tested, used by default |
+| `0db0:7880` to `0db0:7919` | other cards declared by the Windows driver | **untested**, only with `--any-supported-pid` |
+
+By default, lightning only drives `0db0:7881`. To try another screen of the range, with the
+service stopped: `lightning --any-supported-pid status`, then `color`, `dashboard`… (or
+`any_supported_pid = true` in the `[output]` section of the configuration, for the daemon). The
+ID in use shows in `lightning status` and in the daemon's screen state (`lightning ctl status`).
+Please report the result with the "Retour sur un matériel non testé" issue template.
 
 ## Known limitations
 

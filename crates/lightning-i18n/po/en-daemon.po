@@ -329,8 +329,8 @@ msgstr "Autumn Light over the City"
 msgid "mode"
 msgstr "mode"
 
-msgid "mode {mode}"
-msgstr "mode {mode}"
+msgid "mode {mode}, {id}"
+msgstr "mode {mode}, {id}"
 
 msgid "mode « {mode} » inutilisable : {error}"
 msgstr "mode \"{mode}\" unusable: {error}"
@@ -553,3 +553,9 @@ msgstr "↑ sent"
 
 msgid "↓ reçu"
 msgstr "↓ received"
+
+msgid "identifiant"
+msgstr "USB ID"
+
+msgid "{id} (non testé)"
+msgstr "{id} (untested)"

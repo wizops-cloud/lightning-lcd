@@ -56,6 +56,10 @@ struct Cli {
     /// Ne pas utiliser l'écran réel (développement sans matériel)
     #[arg(long, global = true)]
     no_lcd: bool,
+    /// Accepter aussi les écrans 0db0:7880 à 0db0:7919 déclarés par le pilote
+    /// Windows mais non testés (défaut : 0db0:7881 seul)
+    #[arg(long, global = true)]
+    any_supported_pid: bool,
     /// Adresse d'écoute de la sortie http (défaut : 127.0.0.1:7881)
     #[arg(long, global = true, value_name = "ADRESSE:PORT")]
     http_addr: Option<String>,
@@ -279,6 +283,10 @@ fn run(cli: Cli) -> Result<()> {
         config::load(cli.config.as_deref())?
     };
     merge_cli(&mut config, &cli)?;
+    // Option de ligne de commande non enregistrée dans la configuration.
+    lightning_lcd::device::set_policy(device_policy(
+        cli.any_supported_pid || config.output.any_supported_pid,
+    ));
     let stop = Arc::new(AtomicBool::new(false));
     {
         let stop = stop.clone();
@@ -374,11 +382,32 @@ fn restore() -> Result<()> {
     }
 }
 
+/// Identifiants USB acceptés : 0db0:7881 seul, sauf option explicite.
+fn device_policy(any_supported_pid: bool) -> lightning_lcd::DevicePolicy {
+    if any_supported_pid {
+        lightning_lcd::DevicePolicy::AnySupported
+    } else {
+        lightning_lcd::DevicePolicy::Tested
+    }
+}
+
+/// Libellé de l'identifiant USB, « non testé » hors 0db0:7881.
+pub fn usb_label(pid: u16) -> String {
+    let id = lightning_lcd::device::usb_id(pid);
+    if pid == lightning_lcd::PID {
+        id
+    } else {
+        trf("{id} (non testé)", &[("id", &id)])
+    }
+}
+
 fn status() -> Result<()> {
     let mut hid = HidControl::open()?;
+    let pid = hid.pid();
     match hid.status()? {
         Some(st) => {
             let line = |label: &str, value: String| println!("{label:<14}: {value}");
+            line(tr("identifiant"), usb_label(pid));
             line(tr("modèle"), st.model.clone());
             line(tr("numéro série"), st.sn.clone());
             line(tr("firmware"), st.version.firmware.clone());
@@ -644,6 +673,9 @@ mod tests {
             "lightning daemon",
             "lightning --demo --no-lcd daemon",
             "lightning --demo dashboard --png out.png",
+            "lightning --any-supported-pid status",
+            "lightning ctl clock --seconds",
+            "lightning ctl now-playing --player spotify",
         ] {
             let cli =
                 Cli::try_parse_from(args.split(' ')).unwrap_or_else(|e| panic!("{args} : {e}"));
@@ -653,6 +685,19 @@ mod tests {
         }
         assert!(Cli::try_parse_from("lightning ctl mode tv".split(' ')).is_err());
         assert!(Cli::try_parse_from("lightning ctl http maybe".split(' ')).is_err());
+    }
+
+    #[test]
+    fn device_selection_is_explicit() {
+        assert_eq!(device_policy(false), lightning_lcd::DevicePolicy::Tested);
+        assert_eq!(
+            device_policy(true),
+            lightning_lcd::DevicePolicy::AnySupported
+        );
+        let cli = Cli::try_parse_from("lightning status".split(' ')).unwrap();
+        assert!(!cli.any_supported_pid, "désactivé par défaut");
+        assert_eq!(usb_label(0x7881), "0db0:7881");
+        assert_eq!(usb_label(0x7890), "0db0:7890 (non testé)");
     }
 
     #[test]

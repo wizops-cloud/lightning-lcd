@@ -20,12 +20,14 @@
 //! L'upload de médias dans la flash de l'écran (`transport`/`transported`) n'est
 //! volontairement pas implémenté.
 
+pub mod device;
 pub mod display;
 pub mod error;
 pub mod frame;
 pub mod hid;
 pub mod rsa;
 
+pub use device::DevicePolicy;
 pub use display::{Display, Mode, OpenOptions};
 pub use error::Error;
 pub use hid::{HidControl, Status};

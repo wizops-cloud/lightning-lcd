@@ -38,6 +38,8 @@ pub struct OutputConfig {
     pub preview_rotation: u16,
     /// Comportement de l'écran à l'arrêt : `keep`, `blank` ou `restore`.
     pub on_exit: OnExit,
+    /// Accepter les écrans 0db0:7880 à 0db0:7919 (non testés) en plus de 0db0:7881.
+    pub any_supported_pid: bool,
 }
 
 impl Default for OutputConfig {
@@ -48,6 +50,7 @@ impl Default for OutputConfig {
             overlay: true,
             preview_rotation: 0,
             on_exit: OnExit::Keep,
+            any_supported_pid: false,
         }
     }
 }
@@ -233,6 +236,16 @@ mod tests {
         assert_eq!(Config::default().output.http_addr, "127.0.0.1:7881");
         assert!(parse("[output]\noutputs = [\"tv\"]\n").is_err());
         assert!(parse("[output]\npreview_rotation = 45\n").is_err());
+        assert!(
+            !Config::default().output.any_supported_pid,
+            "7881 seul par défaut"
+        );
+        assert!(
+            parse("[output]\nany_supported_pid = true\n")
+                .unwrap()
+                .output
+                .any_supported_pid
+        );
     }
 
     #[test]

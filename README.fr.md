@@ -106,7 +106,7 @@ cargo build --release
 install -Dm755 target/release/lightning ~/.local/bin/lightning
 install -Dm755 target/release/lightning-settings ~/.local/bin/lightning-settings
 
-# Accès à l'écran sans root (USB + hidraw de 0db0:7881 uniquement)
+# Accès à l'écran sans root (USB + hidraw des écrans 0db0:7880 à 0db0:7919)
 sudo install -m644 packaging/70-msi-lightning-lcd.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger --attr-match=idVendor=0db0 --attr-match=idProduct=7881
 
@@ -345,6 +345,20 @@ adresse HTTP, comportement à l'arrêt).
 let mut display = lightning_lcd::Display::open()?;
 display.show_rgb(&pixels)?; // 1280 × 800 × 3 octets
 ```
+
+## Matériel compatible
+
+| Identifiant USB | Carte | État |
+|---|---|---|
+| `0db0:7881` | MSI GeForce RTX 5090 Lightning Z | testé, utilisé par défaut |
+| `0db0:7880` à `0db0:7919` | autres cartes déclarées par le pilote Windows | **non testé**, seulement avec `--any-supported-pid` |
+
+Par défaut, lightning ne pilote que `0db0:7881`. Pour essayer un autre écran de la plage, service
+arrêté : `lightning --any-supported-pid status`, puis `color`, `dashboard`… (ou
+`any_supported_pid = true` dans la section `[output]` de la configuration, pour le démon).
+L'identifiant utilisé apparaît dans `lightning status` et dans l'état de l'écran du démon
+(`lightning ctl status`). Merci de raconter le résultat avec le modèle d'issue « Retour sur un
+matériel non testé ».
 
 ## Limites connues
 
