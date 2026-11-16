@@ -109,6 +109,19 @@ impl LightningService {
         }))
     }
 
+    async fn set_clock(&self, seconds: bool, date: bool) -> fdo::Result<()> {
+        self.call(Request::SetClock(lightning_dashboard::ClockConfig {
+            seconds,
+            date,
+        }))
+    }
+
+    async fn set_now_playing(&self, player: &str) -> fdo::Result<()> {
+        self.call(Request::SetNowPlaying {
+            player: player.to_owned(),
+        })
+    }
+
     async fn slideshow_next(&self) -> fdo::Result<()> {
         self.call(Request::SlideshowNext)
     }
@@ -294,6 +307,26 @@ impl LightningService {
     }
 
     #[zbus(property)]
+    async fn clock_seconds(&self) -> bool {
+        self.handle.state().clock_seconds
+    }
+
+    #[zbus(property)]
+    async fn clock_date(&self) -> bool {
+        self.handle.state().clock_date
+    }
+
+    #[zbus(property)]
+    async fn now_playing_player(&self) -> String {
+        self.handle.state().now_playing_player
+    }
+
+    #[zbus(property)]
+    async fn now_playing_title(&self) -> String {
+        self.handle.state().now_playing_title
+    }
+
+    #[zbus(property)]
     async fn google_state(&self) -> String {
         self.handle.state().google_state
     }
@@ -387,6 +420,10 @@ pub fn changed_properties(
         slideshow_clock => "SlideshowClock",
         slideshow_count => "SlideshowCount",
         slideshow_current => "SlideshowCurrent",
+        clock_seconds => "ClockSeconds",
+        clock_date => "ClockDate",
+        now_playing_player => "NowPlayingPlayer",
+        now_playing_title => "NowPlayingTitle",
         google_state => "GoogleState",
         google_detail => "GoogleDetail",
         google_url => "GoogleUrl",
@@ -476,7 +513,7 @@ pub(crate) mod tests {
             fps: 2.0,
             ..Default::default()
         };
-        assert_eq!(changed_properties(None, &a).len(), 34);
+        assert_eq!(changed_properties(None, &a).len(), 38);
         let mut b = a.clone();
         assert!(changed_properties(Some(&a), &b).is_empty());
         b.mode = "color".into();
@@ -597,6 +634,23 @@ pub(crate) mod tests {
         );
         proxy.google_photos_clear_cache().unwrap();
         assert_eq!(proxy.google_cached_count().unwrap(), 0);
+
+        // Horloge et lecture en cours.
+        proxy.set_clock(true, false).unwrap();
+        proxy.set_now_playing("rhythmbox").unwrap();
+        proxy.set_mode("clock").unwrap();
+        wait_for("horloge signalée", || {
+            proxy.mode().unwrap() == "clock"
+                && proxy.clock_seconds().unwrap()
+                && !proxy.clock_date().unwrap()
+                && proxy.now_playing_player().unwrap() == "rhythmbox"
+        });
+        assert!(proxy.set_now_playing("a b").is_err());
+        proxy.set_mode("now_playing").unwrap();
+        wait_for("lecture signalée", || {
+            proxy.mode().unwrap() == "now_playing"
+        });
+        assert_eq!(proxy.now_playing_title().unwrap(), "");
 
         proxy.set_mode("dashboard").unwrap();
         proxy.save_config().unwrap();

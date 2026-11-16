@@ -79,7 +79,7 @@ au matériel : elle pilote le démon par D-Bus et le service par l'API D-Bus de 
 | Page | Contenu |
 |---|---|
 | Accueil | grand aperçu en direct de l'écran, pastilles d'état (liaison, contenu, cadence, temps de rendu, luminosité), cartes de contenu, luminosité |
-| Contenu | cartes illustrées (tableau de bord, image, vidéo, diaporama, couleur, animation d'origine) et options du contenu choisi |
+| Contenu | cartes illustrées (tableau de bord, image, vidéo, diaporama, horloge, lecture en cours, couleur, animation d'origine) et options du contenu choisi |
 | Diaporama | tuiles des dossiers avec couverture et nombre de photos, import Google Photos, réglages de lecture |
 | Tableau de bord | panneaux affichés, ordre (glisser-déposer ou boutons monter/descendre) et schéma de la disposition |
 | Réglages | luminosité, orientation, cadence, comportement à l'arrêt, aperçu HTTP |
@@ -109,12 +109,14 @@ chaud et sont enregistrés dans `~/.config/lightning/config.toml`.
 
 ```sh
 lightning ctl status
-lightning ctl mode dashboard|image|video|slideshow|color|msi_animation
+lightning ctl mode dashboard|image|video|slideshow|clock|now_playing|color|msi_animation
 lightning ctl image photo.jpg --fit contain
 lightning ctl video film.mp4 [--once]
 lightning ctl color ff8800
 lightning ctl slideshow ~/Images --interval 20 --order chronological
 lightning ctl next                       # photo suivante
+lightning ctl clock [--seconds] [--no-date]          # horloge plein écran
+lightning ctl now-playing [--player spotify]         # morceau en cours (MPRIS)
 lightning ctl brightness 60              # appliquée en quelques secondes
 lightning ctl fps 1 ; lightning ctl rotation 180 ; lightning ctl widgets cpu,gpu,network
 lightning ctl on-exit blank ; lightning ctl http on --addr 127.0.0.1:7881
@@ -128,12 +130,14 @@ Interface D-Bus (bus de session) : nom `cloud.wizops.Lightning.Daemon`, objet
 
 - **Méthodes** : `SetMode`, `ShowImage`, `PlayVideo`, `ShowColor`, `Restore`, `SetBrightness`,
   `SetFps`, `SetRotation`, `SetWidgets`, `SetOnExit`, `SetHttp`, `SetSlideshow`, `SlideshowNext`,
+  `SetClock`, `SetNowPlaying`,
   `SetGoogleCredentials`, `GooglePhotosStart`, `GooglePhotosCancel`, `GooglePhotosClearCache`,
   `GetFrameJpeg`, `SaveConfig`, `ReloadConfig`.
 - **Propriétés** (lecture seule, avec `PropertiesChanged`) : `LcdState`, `LcdDetail`, `Mode`,
   `Brightness`, `FirmwareBrightness`, `Fps`, `Rotation`, `Widgets`, `AvailableWidgets`, `OnExit`,
   `HttpEnabled`, `HttpAddr`, `ImagePath`, `ImageFit`, `VideoPath`, `VideoLoop`, `Color`,
-  `MeasuredFps`, `RenderMs`, `FramesSent`, `Slideshow*`, `Google*`, `Version`.
+  `MeasuredFps`, `RenderMs`, `FramesSent`, `Slideshow*`, `ClockSeconds`, `ClockDate`,
+  `NowPlayingPlayer`, `NowPlayingTitle`, `Google*`, `Version`.
 
 ```sh
 busctl --user introspect cloud.wizops.Lightning.Daemon /cloud/wizops/Lightning
@@ -178,6 +182,20 @@ Il faut créer une fois votre propre client OAuth :
 
 Le jeton de rafraîchissement est conservé dans `~/.config/lightning/google.json` (mode 0600).
 « Vider le cache » supprime les photos importées.
+
+## Horloge et lecture en cours
+
+- **Horloge** (`clock`) : l'heure en très grand, lisible de loin, avec la date en toutes lettres ;
+  secondes facultatives.
+- **En cours de lecture** (`now_playing`) : titre, artiste, album, pochette et progression du
+  morceau joué par un lecteur compatible MPRIS (Spotify, Rhythmbox, Lollypop, navigateurs…). Le
+  démon interroge le bus de session une fois par seconde ; il choisit le lecteur qui joue, sinon
+  celui en pause, ou le lecteur préféré (`[now_playing] player = "spotify"`). La pochette est lue
+  sur le disque ou téléchargée depuis l'adresse fournie par le lecteur.
+
+| Horloge | En cours de lecture |
+|---|---|
+| ![](docs/clock.png) | ![](docs/now-playing.png) |
 
 ## Usage en ligne de commande
 

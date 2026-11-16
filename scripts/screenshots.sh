@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Régénère les captures de la documentation : docs/screenshots/*.png et docs/dashboard.png.
+# Régénère les captures de la documentation : docs/screenshots/*.png, docs/dashboard.png,
+# docs/clock.png et docs/now-playing.png.
 #
 #   scripts/screenshots.sh [--no-build] [--out DOSSIER]
 #
@@ -157,6 +158,25 @@ mkdir -p "$OUT"
 XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
     "$LIGHTNING" --config "$WORK/empty.toml" --no-lcd --demo dashboard --png "$ROOT/docs/dashboard.png"
 
+# --- Horloge et lecture en cours (images de l'écran, démon de démonstration privé) -------
+XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
+    dbus-run-session --config-file="$WORK/bus.conf" -- bash -c '
+        set -euo pipefail
+        cp "$2" "$4/screens.toml"
+        "$1" --config "$4/screens.toml" --no-lcd --demo daemon &
+        daemon=$!
+        trap "kill $daemon 2>/dev/null || true; wait 2>/dev/null || true" EXIT
+        gdbus wait --session --timeout 15 cloud.wizops.Lightning.Daemon
+        "$1" ctl clock >/dev/null
+        sleep 1.5
+        "$1" ctl frame "$4/clock.jpg" >/dev/null
+        "$1" ctl now-playing >/dev/null
+        sleep 1.5
+        "$1" ctl frame "$4/now-playing.jpg" >/dev/null
+    ' _ "$LIGHTNING" "$WORK/empty.toml" "" "$WORK"
+magick "$WORK/clock.jpg" "$ROOT/docs/clock.png"
+magick "$WORK/now-playing.jpg" "$ROOT/docs/now-playing.png"
+
 # --- Compositeur sans écran ---------------------------------------------------------------
 dbus-run-session --config-file="$WORK/bus.conf" -- mutter --headless --wayland --no-x11 --virtual-monitor 1700x1200 \
     --wayland-display "$DISPLAY_NAME" >"$WORK/mutter.log" 2>&1 &
@@ -199,4 +219,4 @@ shoot sombre dark
 shoot clair light
 shoot etroit dark 420x780
 
-echo "captures écrites dans $OUT et $ROOT/docs/dashboard.png"
+echo "captures écrites dans $OUT et $ROOT/docs/{dashboard,clock,now-playing}.png"

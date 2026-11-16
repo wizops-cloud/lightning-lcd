@@ -6,6 +6,7 @@ mod daemon;
 mod google;
 mod media;
 mod mjpeg;
+mod mpris;
 mod outputs;
 mod slideshow;
 mod text;

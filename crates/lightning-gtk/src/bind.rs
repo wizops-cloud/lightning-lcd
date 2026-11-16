@@ -684,6 +684,32 @@ pub fn connect(ui: &Rc<Ui>, remote: &Remote) {
             });
         }
     });
+    for row in [&ui.clock_seconds, &ui.clock_date] {
+        row.connect_active_notify({
+            let (ui, remote) = (ui.clone(), remote.clone());
+            move |_| {
+                if !ui.user_action() {
+                    return;
+                }
+                let (seconds, date) = (ui.clock_seconds.is_active(), ui.clock_date.is_active());
+                let remote = remote.clone();
+                call(
+                    &ui,
+                    async move { remote.daemon.set_clock(seconds, date).await },
+                );
+            }
+        });
+    }
+    ui.now_playing_player.connect_apply({
+        let (ui, remote) = (ui.clone(), remote.clone());
+        move |row| {
+            ui.user_action();
+            let (player, remote) = (row.text().trim().to_owned(), remote.clone());
+            call_confirmed(&ui, "Lecteur préféré enregistré", async move {
+                remote.daemon.set_now_playing(&player).await
+            });
+        }
+    });
     ui.http_addr.connect_apply({
         let (ui, remote) = (ui.clone(), remote.clone());
         move |row| {
@@ -800,6 +826,9 @@ fn card_subtitle(mode: Mode, st: &DaemonState, default: &str) -> String {
             n => plural(n, "dossier", "dossiers"),
         },
         Mode::Color => format!("#{}", st.color),
+        Mode::NowPlaying if st.mode == "now_playing" && !st.now_playing_title.is_empty() => {
+            st.now_playing_title.clone()
+        }
         _ => default.to_owned(),
     }
 }
@@ -875,6 +904,17 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
     ui.video_row
         .set_subtitle(&glib::markup_escape_text(&file_name(&st.video_path)));
     ui.version_row.set_subtitle(&st.version);
+    ui.now_playing_row.set_subtitle(&glib::markup_escape_text(
+        if st.now_playing_title.is_empty() {
+            if st.mode == "now_playing" {
+                "Aucune lecture en cours"
+            } else {
+                "Visible quand ce contenu est affiché"
+            }
+        } else {
+            &st.now_playing_title
+        },
+    ));
     ui.slideshow_summary
         .set_subtitle(&match st.slideshow_folders.len() {
             0 => "Aucun dossier choisi".to_owned(),
@@ -944,6 +984,13 @@ pub fn apply_daemon(ui: &Rc<Ui>, remote: &Remote, st: &DaemonState, live: Option
             ui.image_fit.set_selected(i as u32);
         }
         ui.video_loop.set_active(st.video_loop);
+        ui.clock_seconds.set_active(st.clock_seconds);
+        ui.clock_date.set_active(st.clock_date);
+        if !ui.now_playing_player.has_focus()
+            && ui.now_playing_player.text() != st.now_playing_player
+        {
+            ui.now_playing_player.set_text(&st.now_playing_player);
+        }
         if let Some(rgba) = parse_hex(&st.color) {
             ui.color.set_rgba(&rgba);
         }
@@ -1491,6 +1538,17 @@ mod tests {
             card_subtitle(Mode::Slideshow, &st, ""),
             "14 photos · 2 dossiers"
         );
+        // Lecture en cours : le morceau, seulement quand ce contenu est affiché.
+        st.now_playing_title = "Titre — Artiste".into();
+        assert_eq!(card_subtitle(Mode::NowPlaying, &st, "défaut"), "défaut");
+        st.mode = "now_playing".into();
+        assert_eq!(
+            card_subtitle(Mode::NowPlaying, &st, "défaut"),
+            "Titre — Artiste"
+        );
+        st.now_playing_title.clear();
+        assert_eq!(card_subtitle(Mode::NowPlaying, &st, "défaut"), "défaut");
+        assert_eq!(card_subtitle(Mode::Clock, &st, "L'heure"), "L'heure");
     }
 
     #[test]

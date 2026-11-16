@@ -7,4 +7,4 @@ pub mod render;
 
 pub use config::DashboardConfig;
 pub use metrics::{Collector, History, Snapshot};
-pub use render::Renderer;
+pub use render::{Artwork, ClockConfig, Renderer, Track};

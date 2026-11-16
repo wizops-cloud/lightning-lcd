@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use lightning_dashboard::{Collector, Renderer};
+use lightning_dashboard::{ClockConfig, Collector, Renderer};
 use lightning_ipc::{Fit, Mode, OnExit, WIDGETS};
 use lightning_lcd::HidControl;
 use lightning_lcd::display::encode_jpeg;
@@ -25,6 +25,7 @@ use crate::config::{self, Config, OutputKind};
 use crate::google::{self, Importer};
 use crate::media;
 use crate::mjpeg::JpegSplitter;
+use crate::mpris;
 use crate::outputs::http::HttpSink;
 use crate::outputs::lcd::{HID_LOCK, LcdControl, LcdOptions, LcdSink};
 use crate::outputs::{
@@ -58,6 +59,10 @@ pub enum Request {
     },
     SetSlideshow(SlideshowConfig),
     SlideshowNext,
+    SetClock(ClockConfig),
+    SetNowPlaying {
+        player: String,
+    },
     SetGoogleCredentials {
         client_id: String,
         client_secret: String,
@@ -114,6 +119,10 @@ pub struct PublicState {
     pub slideshow_clock: bool,
     pub slideshow_count: u32,
     pub slideshow_current: String,
+    pub clock_seconds: bool,
+    pub clock_date: bool,
+    pub now_playing_player: String,
+    pub now_playing_title: String,
     pub google_state: String,
     pub google_detail: String,
     pub google_url: String,
@@ -229,6 +238,8 @@ pub struct Engine {
     firmware_brightness: i32,
     brightness_initialised: bool,
     slideshow: Option<Slideshow>,
+    /// Lecteurs MPRIS observés (mode `now_playing` seulement).
+    now_playing: Option<mpris::Watcher>,
     /// Dernière diffusion d'une image du diaporama (réémission périodique).
     last_slide: Instant,
     google: GoogleRuntime,
@@ -391,6 +402,7 @@ impl Engine {
             firmware_brightness: -1,
             brightness_initialised: false,
             slideshow: None,
+            now_playing: None,
             last_slide: Instant::now(),
             google_cached: count_cached(&google.cache_root),
             importer: Importer::new(false),
@@ -456,6 +468,15 @@ impl Engine {
                 .as_ref()
                 .and_then(|s| s.current_path())
                 .map(|p| p.to_string_lossy().into_owned())
+                .unwrap_or_default(),
+            clock_seconds: self.cfg.clock.seconds,
+            clock_date: self.cfg.clock.date,
+            now_playing_player: self.cfg.now_playing.player.clone(),
+            now_playing_title: self
+                .now_playing
+                .as_ref()
+                .and_then(|w| w.current(Instant::now()).0)
+                .map(|t| t.summary())
                 .unwrap_or_default(),
             google_state: google.state,
             google_detail: google.detail,
@@ -535,7 +556,9 @@ impl Engine {
     /// Prépare le contenu d'un mode. En cas d'erreur, rien n'est changé.
     fn enter_mode(&mut self, mode: Mode) -> Reply {
         let still = match mode {
-            Mode::Dashboard | Mode::Video | Mode::Slideshow => None,
+            Mode::Dashboard | Mode::Video | Mode::Slideshow | Mode::Clock | Mode::NowPlaying => {
+                None
+            }
             Mode::Image => {
                 let d = &self.cfg.daemon;
                 if d.image_path.is_empty() {
@@ -556,6 +579,13 @@ impl Engine {
         };
         self.video = None;
         self.slideshow = None;
+        self.now_playing = (mode == Mode::NowPlaying).then(|| {
+            if self.demo {
+                mpris::Watcher::demo()
+            } else {
+                mpris::Watcher::spawn(self.cfg.now_playing.player.clone())
+            }
+        });
         if mode == Mode::Video {
             self.start_video()?;
         }
@@ -727,6 +757,19 @@ impl Engine {
                 Some(show) => show.skip(),
                 None => return Err("le diaporama n'est pas affiché".into()),
             },
+            Request::SetClock(clock) => self.cfg.clock = clock,
+            Request::SetNowPlaying { player } => {
+                let player = player.trim().to_owned();
+                if player.contains(char::is_whitespace) {
+                    return Err("lecteur : un nom sans espace est attendu (ex. spotify)".into());
+                }
+                if player != self.cfg.now_playing.player {
+                    self.cfg.now_playing.player = player;
+                    if self.cfg.daemon.mode == Mode::NowPlaying {
+                        self.enter_mode(Mode::NowPlaying)?;
+                    }
+                }
+            }
             Request::SetGoogleCredentials {
                 client_id,
                 client_secret,
@@ -833,6 +876,34 @@ impl Engine {
                 }
             }
             Mode::Video => {}
+            Mode::Clock => {
+                let t0 = Instant::now();
+                let now = chrono::Local::now().naive_local();
+                let rgba =
+                    self.renderer
+                        .render_clock(now, &self.cfg.clock, self.cfg.dashboard.rotation);
+                if let Err(e) = self.out.present_rgba(rgba, t0.elapsed(), false) {
+                    warn!("image non diffusée : {e:#}");
+                }
+            }
+            Mode::NowPlaying => {
+                let t0 = Instant::now();
+                let (track, art) = self
+                    .now_playing
+                    .as_ref()
+                    .map(|w| w.current(t0))
+                    .unwrap_or_default();
+                let now = chrono::Local::now().naive_local();
+                let rgba = self.renderer.render_now_playing(
+                    track.as_ref(),
+                    art.as_deref(),
+                    now,
+                    self.cfg.dashboard.rotation,
+                );
+                if let Err(e) = self.out.present_rgba(rgba, t0.elapsed(), false) {
+                    warn!("image non diffusée : {e:#}");
+                }
+            }
             Mode::Slideshow => {
                 let Some(show) = &mut self.slideshow else {
                     return;
@@ -873,6 +944,11 @@ impl Engine {
             Mode::Dashboard => self.cfg.dashboard.frame_interval(),
             // Pas court : étapes du fondu enchaîné.
             Mode::Slideshow => Duration::from_millis(50),
+            // Calé sur le changement de seconde de l'horloge murale.
+            Mode::Clock | Mode::NowPlaying => {
+                let ms = chrono::Local::now().timestamp_subsec_millis().min(999);
+                Duration::from_millis(u64::from(1000 - ms) + 5)
+            }
             _ => Duration::from_secs(1),
         }
     }
@@ -1379,6 +1455,57 @@ pub(crate) mod tests {
         h.call(Request::GoogleClearCache).unwrap();
         assert_eq!(h.state().google_cached_count, 0);
         assert!(h.state().google_cache_dir.ends_with("google-cache"));
+    }
+
+    #[test]
+    fn clock_and_now_playing_modes() {
+        let run = start("clock", |_| {}, None);
+        let h = &run.handle;
+        h.call(Request::SetClock(ClockConfig {
+            seconds: true,
+            date: false,
+        }))
+        .unwrap();
+        assert_eq!(
+            h.state().mode,
+            "dashboard",
+            "les réglages ne changent pas le mode"
+        );
+        assert!(h.state().clock_seconds && !h.state().clock_date);
+        h.call(Request::SetMode(Mode::Clock)).unwrap();
+        assert_eq!(h.state().mode, "clock");
+        // Fond sombre et grands chiffres clairs au centre.
+        wait_for("horloge diffusée", || {
+            !h.frame_jpeg().is_empty() && near(frame_pixel(h, 2, 2), [9, 11, 16])
+        });
+        let bright = (300..980)
+            .step_by(4)
+            .filter(|x| frame_pixel(h, *x, 330).iter().all(|c| *c > 200))
+            .count();
+        assert!(bright > 10, "chiffres attendus ({bright})");
+
+        h.call(Request::SetNowPlaying {
+            player: " spotify ".into(),
+        })
+        .unwrap();
+        assert_eq!(h.state().now_playing_player, "spotify");
+        assert!(
+            h.call(Request::SetNowPlaying {
+                player: "deux mots".into()
+            })
+            .is_err()
+        );
+        h.call(Request::SetMode(Mode::NowPlaying)).unwrap();
+        assert_eq!(h.state().mode, "now_playing");
+        // Aucun lecteur « spotify » sur la machine de test : écran d'attente.
+        wait_for("écran de lecture", || !h.frame_jpeg().is_empty());
+
+        let saved = config::load(Some(&run.config_path)).unwrap();
+        assert!(saved.clock.seconds && !saved.clock.date);
+        assert_eq!(saved.now_playing.player, "spotify");
+        assert_eq!(saved.daemon.mode, Mode::NowPlaying);
+        h.call(Request::SetMode(Mode::Dashboard)).unwrap();
+        assert!(h.state().now_playing_title.is_empty());
     }
 
     #[test]

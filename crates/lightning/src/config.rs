@@ -3,11 +3,12 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use lightning_dashboard::DashboardConfig;
+use lightning_dashboard::{ClockConfig, DashboardConfig};
 use lightning_ipc::{Fit, Mode, OnExit};
 use serde::{Deserialize, Serialize};
 
 use crate::google::GoogleConfig;
+use crate::mpris::NowPlayingConfig;
 use crate::slideshow::SlideshowConfig;
 
 /// Configuration complète de l'application.
@@ -18,6 +19,8 @@ pub struct Config {
     pub output: OutputConfig,
     pub daemon: DaemonConfig,
     pub slideshow: SlideshowConfig,
+    pub clock: ClockConfig,
+    pub now_playing: NowPlayingConfig,
     pub google: GoogleConfig,
 }
 
@@ -53,7 +56,8 @@ impl Default for OutputConfig {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(default, deny_unknown_fields)]
 pub struct DaemonConfig {
-    /// `dashboard`, `image`, `video`, `color`, `slideshow` ou `msi_animation`.
+    /// `dashboard`, `image`, `video`, `color`, `slideshow`, `clock`, `now_playing`
+    /// ou `msi_animation`.
     pub mode: Mode,
     /// Image du mode `image` (chemin absolu).
     pub image_path: String,
@@ -251,6 +255,26 @@ mod tests {
     }
 
     #[test]
+    fn clock_and_now_playing_sections() {
+        let cfg =
+            parse("[clock]\nseconds = true\ndate = false\n[now_playing]\nplayer = \"spotify\"\n")
+                .unwrap();
+        assert!(cfg.clock.seconds && !cfg.clock.date);
+        assert_eq!(cfg.now_playing.player, "spotify");
+        let default = Config::default();
+        assert!(!default.clock.seconds && default.clock.date);
+        assert!(default.now_playing.player.is_empty());
+        assert!(parse("[clock]\nformat = 12\n").is_err());
+        assert_eq!(
+            parse("[daemon]\nmode = \"now_playing\"\n")
+                .unwrap()
+                .daemon
+                .mode,
+            Mode::NowPlaying
+        );
+    }
+
+    #[test]
     fn save_then_load_roundtrip() {
         let dir =
             std::env::temp_dir().join(format!("lightning-config-test-{}", std::process::id()));
@@ -266,6 +290,8 @@ mod tests {
         cfg.slideshow.folders = vec!["/home/moi/Images".into()];
         cfg.slideshow.order = crate::slideshow::Order::Chronological;
         cfg.google.client_id = "x.apps.googleusercontent.com".into();
+        cfg.clock.seconds = true;
+        cfg.now_playing.player = "rhythmbox".into();
         save(&path, &cfg).unwrap();
         assert_eq!(load(Some(&path)).unwrap(), cfg);
         // Seconde écriture : remplace le fichier existant.

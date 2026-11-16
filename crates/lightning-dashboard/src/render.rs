@@ -8,6 +8,12 @@ use tiny_skia::{
     Transform,
 };
 
+mod screens;
+
+pub use screens::{
+    Artwork, ClockConfig, Track, demo_artwork, demo_track, fmt_track_time, fr_long_date, wrap_text,
+};
+
 use crate::config::DashboardConfig;
 use crate::metrics::{History, Snapshot};
 

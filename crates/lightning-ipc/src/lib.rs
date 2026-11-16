@@ -76,6 +76,10 @@ string_enum! {
         Color => "color",
         /// Diaporama de photos (dossiers locaux, cache Google Photos).
         Slideshow => "slideshow",
+        /// Horloge et date en plein écran.
+        Clock => "clock",
+        /// Morceau en cours de lecture (lecteurs MPRIS).
+        NowPlaying => "now_playing",
         /// Écran rendu au firmware : animation MSI d'origine.
         MsiAnimation => "msi_animation",
     }
@@ -117,7 +121,7 @@ string_enum! {
 )]
 pub trait Lightning {
     /// Change le contenu affiché (`dashboard`, `image`, `video`, `color`,
-    /// `slideshow`, `msi_animation`).
+    /// `slideshow`, `clock`, `now_playing`, `msi_animation`).
     fn set_mode(&self, mode: &str) -> zbus::Result<()>;
     /// Affiche une image (chemin absolu) ; `fit` : `cover`, `contain` ou `stretch`.
     fn show_image(&self, path: &str, fit: &str) -> zbus::Result<()>;
@@ -153,6 +157,10 @@ pub trait Lightning {
         overlay: bool,
         clock: bool,
     ) -> zbus::Result<()>;
+    /// Horloge plein écran : secondes, date.
+    fn set_clock(&self, seconds: bool, date: bool) -> zbus::Result<()>;
+    /// Lecteur préféré du mode `now_playing` (partie du nom MPRIS, vide = le premier qui joue).
+    fn set_now_playing(&self, player: &str) -> zbus::Result<()>;
     /// Passe à la photo suivante du diaporama.
     fn slideshow_next(&self) -> zbus::Result<()>;
     /// Enregistre l'identifiant client OAuth Google (type « application de bureau »).
@@ -226,6 +234,15 @@ pub trait Lightning {
     /// Photo en cours d'affichage.
     #[zbus(property)]
     fn slideshow_current(&self) -> zbus::Result<String>;
+    #[zbus(property)]
+    fn clock_seconds(&self) -> zbus::Result<bool>;
+    #[zbus(property)]
+    fn clock_date(&self) -> zbus::Result<bool>;
+    #[zbus(property)]
+    fn now_playing_player(&self) -> zbus::Result<String>;
+    /// Morceau affiché (« Titre — Artiste »), vide si rien ne joue ou hors de ce mode.
+    #[zbus(property)]
+    fn now_playing_title(&self) -> zbus::Result<String>;
     /// `unconfigured`, `idle`, `awaiting_auth`, `awaiting_selection`, `downloading`, `error`.
     #[zbus(property)]
     fn google_state(&self) -> zbus::Result<String>;
@@ -264,6 +281,8 @@ mod tests {
             assert_eq!(mode.as_str().parse::<Mode>().unwrap(), *mode);
         }
         assert_eq!("msi_animation".parse::<Mode>().unwrap(), Mode::MsiAnimation);
+        assert_eq!("now_playing".parse::<Mode>().unwrap(), Mode::NowPlaying);
+        assert_eq!(Mode::Clock.to_string(), "clock");
         assert_eq!(Fit::Contain.to_string(), "contain");
         assert_eq!("blank".parse::<OnExit>().unwrap(), OnExit::Blank);
         let err = "tv".parse::<Mode>().unwrap_err();

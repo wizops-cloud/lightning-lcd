@@ -55,7 +55,7 @@ pub const PAGES: [(&str, &str, &str, &str); 6] = [
 ];
 
 /// Contenus proposés : `(mode, titre, icône, description)`.
-pub const MODES: [(Mode, &str, &str, &str); 6] = [
+pub const MODES: [(Mode, &str, &str, &str); 8] = [
     (
         Mode::Dashboard,
         "Tableau de bord",
@@ -79,6 +79,18 @@ pub const MODES: [(Mode, &str, &str, &str); 6] = [
         "Diaporama",
         "folder-pictures-symbolic",
         "Vos photos qui défilent",
+    ),
+    (
+        Mode::Clock,
+        "Horloge",
+        "preferences-system-time-symbolic",
+        "L'heure en grand, lisible de loin",
+    ),
+    (
+        Mode::NowPlaying,
+        "En cours de lecture",
+        "audio-x-generic-symbolic",
+        "Le morceau joué sur ce PC",
     ),
     (
         Mode::Color,
@@ -228,6 +240,10 @@ pub struct Ui {
     pub video_row: adw::ActionRow,
     pub video_button: gtk::Button,
     pub video_loop: adw::SwitchRow,
+    pub clock_seconds: adw::SwitchRow,
+    pub clock_date: adw::SwitchRow,
+    pub now_playing_row: adw::ActionRow,
+    pub now_playing_player: adw::EntryRow,
     pub color: gtk::ColorDialogButton,
     pub swatches: Vec<(String, gtk::Button)>,
     pub slideshow_summary: adw::ActionRow,
@@ -479,6 +495,10 @@ fn card(mode: Mode, title: &str, icon: &str, description: &str, large: bool) -> 
     let subtitle = label(description, &["subtitle"]);
     subtitle.set_wrap(false);
     subtitle.set_ellipsize(gtk::pango::EllipsizeMode::End);
+    // Largeur naturelle bornée : un long sous-titre (nom de fichier, morceau en
+    // cours) ne doit pas réduire le nombre de cartes par ligne.
+    title_label.set_max_width_chars(18);
+    subtitle.set_max_width_chars(18);
     let texts = gtk::Box::new(gtk::Orientation::Vertical, 1);
     texts.set_hexpand(true);
     texts.append(&title_label);
@@ -691,6 +711,36 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
     slideshow_open.set_valign(gtk::Align::Center);
     slideshow_summary.add_suffix(&slideshow_open);
     details.add_named(&group(&[slideshow_summary.upcast_ref()]), Some("slideshow"));
+
+    let clock_seconds = adw::SwitchRow::builder()
+        .title("Secondes")
+        .subtitle("Affichées en plus petit à côté de l'heure")
+        .build();
+    let clock_date = adw::SwitchRow::builder()
+        .title("Date")
+        .subtitle("Jour, mois et année sous l'heure")
+        .build();
+    details.add_named(
+        &group(&[clock_seconds.upcast_ref(), clock_date.upcast_ref()]),
+        Some("clock"),
+    );
+
+    let now_playing_row = adw::ActionRow::builder()
+        .title("Morceau")
+        .subtitle("Aucune lecture en cours")
+        .build();
+    now_playing_row.add_css_class("property");
+    let now_playing_player = adw::EntryRow::builder()
+        .title("Lecteur préféré (ex. spotify ; vide = celui qui joue)")
+        .show_apply_button(true)
+        .build();
+    details.add_named(
+        &group(&[
+            now_playing_row.upcast_ref(),
+            now_playing_player.upcast_ref(),
+        ]),
+        Some("now_playing"),
+    );
 
     let color = gtk::ColorDialogButton::new(Some(
         gtk::ColorDialog::builder()
@@ -1203,6 +1253,10 @@ pub fn build(app: &adw::Application) -> Rc<Ui> {
         video_row,
         video_button,
         video_loop,
+        clock_seconds,
+        clock_date,
+        now_playing_row,
+        now_playing_player,
         color,
         swatches,
         slideshow_summary,

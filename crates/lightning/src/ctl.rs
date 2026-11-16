@@ -11,7 +11,7 @@ use lightning_ipc::{Fit, LightningProxyBlocking, Mode, OnExit, SYSTEMD_UNIT};
 pub enum CtlCmd {
     /// Affiche l'état du démon
     Status,
-    /// Change le contenu : dashboard, image, video, color, msi_animation
+    /// Change le contenu : dashboard, image, video, color, slideshow, clock, now_playing, msi_animation
     Mode { mode: Mode },
     /// Affiche une image
     Image {
@@ -77,6 +77,21 @@ pub enum CtlCmd {
     },
     /// Photo suivante du diaporama
     Next,
+    /// Affiche l'horloge plein écran
+    Clock {
+        /// Afficher les secondes
+        #[arg(long)]
+        seconds: bool,
+        /// Masquer la date
+        #[arg(long)]
+        no_date: bool,
+    },
+    /// Affiche le morceau en cours de lecture (lecteurs MPRIS)
+    NowPlaying {
+        /// Lecteur préféré (ex. spotify) ; "" = le premier qui joue ; absent = inchangé
+        #[arg(long)]
+        player: Option<String>,
+    },
     /// Import Google Photos : start, cancel, clear ou status
     Google {
         #[arg(value_parser = ["start", "cancel", "clear", "status"])]
@@ -118,6 +133,10 @@ fn explain(err: zbus::Error) -> anyhow::Error {
         },
         _ => anyhow!("{err}"),
     }
+}
+
+fn yes_no(value: bool) -> &'static str {
+    if value { "oui" } else { "non" }
 }
 
 fn brightness_text(value: i32) -> String {
@@ -189,6 +208,24 @@ pub fn run(proxy: &LightningProxyBlocking<'_>, cmd: CtlCmd, out: &mut impl Write
                 proxy.slideshow_count().map_err(explain)?,
                 proxy.slideshow_interval().map_err(explain)?,
                 p(proxy.slideshow_order())?
+            )?;
+            writeln!(
+                out,
+                "horloge        : secondes {}, date {}",
+                yes_no(proxy.clock_seconds().map_err(explain)?),
+                yes_no(proxy.clock_date().map_err(explain)?)
+            )?;
+            let player = p(proxy.now_playing_player())?;
+            let title = p(proxy.now_playing_title())?;
+            writeln!(
+                out,
+                "lecture        : {} (lecteur {})",
+                if title.is_empty() { "—" } else { &title },
+                if player.is_empty() {
+                    "au choix"
+                } else {
+                    &player
+                }
             )?;
             writeln!(out, "à l'arrêt      : {}", p(proxy.on_exit())?)?;
             let http = if proxy.http_enabled().map_err(explain)? {
@@ -272,6 +309,16 @@ pub fn run(proxy: &LightningProxyBlocking<'_>, cmd: CtlCmd, out: &mut impl Write
             proxy.set_mode(Mode::Slideshow.as_str()).map_err(explain)?;
         }
         CtlCmd::Next => proxy.slideshow_next().map_err(explain)?,
+        CtlCmd::Clock { seconds, no_date } => {
+            proxy.set_clock(seconds, !no_date).map_err(explain)?;
+            proxy.set_mode(Mode::Clock.as_str()).map_err(explain)?;
+        }
+        CtlCmd::NowPlaying { player } => {
+            if let Some(player) = player {
+                proxy.set_now_playing(&player).map_err(explain)?;
+            }
+            proxy.set_mode(Mode::NowPlaying.as_str()).map_err(explain)?;
+        }
         CtlCmd::Google { action } => match action.as_str() {
             "start" => {
                 proxy.google_photos_start().map_err(explain)?;
@@ -466,6 +513,31 @@ mod tests {
         );
         assert!(!st.slideshow_overlay && st.slideshow_clock);
         ctl(CtlCmd::Next).unwrap();
+        ctl(CtlCmd::Clock {
+            seconds: true,
+            no_date: true,
+        })
+        .unwrap();
+        let st = h.state();
+        assert_eq!(st.mode, "clock");
+        assert!(st.clock_seconds && !st.clock_date);
+        ctl(CtlCmd::NowPlaying {
+            player: Some("spotify".into()),
+        })
+        .unwrap();
+        ctl(CtlCmd::NowPlaying { player: None }).unwrap();
+        assert_eq!(h.state().mode, "now_playing");
+        assert_eq!(h.state().now_playing_player, "spotify", "absent : inchangé");
+        wait_for("statut à jour", || proxy.mode().unwrap() == "now_playing");
+        let status = ctl(CtlCmd::Status).unwrap();
+        assert!(
+            status.contains("horloge        : secondes oui, date non"),
+            "{status}"
+        );
+        assert!(
+            status.contains("lecture        : — (lecteur spotify)"),
+            "{status}"
+        );
         let google = ctl(CtlCmd::Google {
             action: "status".into(),
         })

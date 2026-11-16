@@ -38,6 +38,10 @@ pub struct DaemonState {
     pub slideshow_clock: bool,
     pub slideshow_count: u32,
     pub slideshow_current: String,
+    pub clock_seconds: bool,
+    pub clock_date: bool,
+    pub now_playing_player: String,
+    pub now_playing_title: String,
     pub google_state: String,
     pub google_detail: String,
     pub google_url: String,
@@ -85,6 +89,10 @@ impl DaemonState {
             slideshow_clock: get(m, "SlideshowClock").unwrap_or(true),
             slideshow_count: get(m, "SlideshowCount").unwrap_or(0),
             slideshow_current: get(m, "SlideshowCurrent").unwrap_or_default(),
+            clock_seconds: get(m, "ClockSeconds").unwrap_or(false),
+            clock_date: get(m, "ClockDate").unwrap_or(true),
+            now_playing_player: get(m, "NowPlayingPlayer").unwrap_or_default(),
+            now_playing_title: get(m, "NowPlayingTitle").unwrap_or_default(),
             google_state: get(m, "GoogleState").unwrap_or_default(),
             google_detail: get(m, "GoogleDetail").unwrap_or_default(),
             google_url: get(m, "GoogleUrl").unwrap_or_default(),
@@ -313,7 +321,14 @@ mod tests {
         map.insert("VideoLoop".to_owned(), owned(Value::new(false)));
         map.insert("Rotation".to_owned(), owned(Value::new("pas un nombre")));
         map.insert("LcdState".to_owned(), owned(Value::new("connected")));
+        map.insert("ClockSeconds".to_owned(), owned(Value::new(true)));
+        map.insert("NowPlayingTitle".to_owned(), owned(Value::new("T — A")));
         let st = DaemonState::from_properties(map);
+        assert!(
+            st.clock_seconds && st.clock_date,
+            "date affichée par défaut"
+        );
+        assert_eq!(st.now_playing_title, "T — A");
         assert_eq!(st.mode, "image");
         assert_eq!(st.brightness, 70);
         assert_eq!(st.fps, 5.0);
