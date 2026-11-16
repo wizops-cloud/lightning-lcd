@@ -9,11 +9,9 @@ pub enum Error {
     DeviceNotFound,
     #[error("interface HID de l'écran introuvable (hidraw)")]
     HidNotFound,
-    #[error(
-        "accès refusé à {0} : installer packaging/70-msi-lightning-lcd.rules ou lancer avec sudo"
-    )]
+    #[error("accès refusé à {0} : installer packaging/70-lightning-lcd.rules ou lancer avec sudo")]
     PermissionDenied(PathBuf),
-    #[error("accès refusé au périphérique USB : installer packaging/70-msi-lightning-lcd.rules")]
+    #[error("accès refusé au périphérique USB : installer packaging/70-lightning-lcd.rules")]
     UsbPermissionDenied,
     #[error("erreur USB : {0}")]
     Usb(#[from] rusb::Error),

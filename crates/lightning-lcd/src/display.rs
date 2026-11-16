@@ -1,6 +1,6 @@
 //! Session d'affichage : bascule en mode étendu, authentification, envoi d'images.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use jpeg_encoder::{ColorType, Encoder, SamplingFactor};
@@ -67,7 +67,7 @@ impl Default for OpenOptions {
 /// échoue provoque une reconnexion puis un second essai.
 pub struct Display {
     /// Verrou consultatif : un seul processus pilote l'écran à la fois.
-    _lock: std::fs::File,
+    _lock: Lock,
     handle: Option<DeviceHandle<GlobalContext>>,
     opts: OpenOptions,
     mode: Mode,
@@ -417,20 +417,34 @@ fn runtime_dir() -> PathBuf {
     PathBuf::from(std::env::var_os("XDG_RUNTIME_DIR").unwrap_or_else(|| "/tmp".into()))
 }
 
+/// Nom du verrou partagé par tous les processus qui pilotent l'écran.
+const LOCK_NAME: &str = "lightning-lcd.lock";
+/// Nom du cache « énumération USB déjà authentifiée ».
+const AUTH_NAME: &str = "lightning-lcd.auth";
+/// Anciens noms (versions 0.1) : le verrou est aussi pris, pour qu'une ancienne
+/// version encore lancée pendant une mise à jour reste exclue, et le cache est
+/// relu une fois. À retirer quand plus aucune 0.1 ne circule.
+const LEGACY_LOCK_NAME: &str = "msi-lightning-lcd.lock";
+const LEGACY_AUTH_NAME: &str = "msi-lightning-lcd.auth";
+
 /// Chemin du fichier de verrou partagé par tous les processus qui pilotent l'écran.
 pub fn lock_path() -> PathBuf {
-    runtime_dir().join("msi-lightning-lcd.lock")
+    runtime_dir().join(LOCK_NAME)
 }
 
-/// Prend le verrou exclusif (libéré à la fermeture du fichier, donc à la fin
-/// du processus quoi qu'il arrive).
-fn acquire_lock() -> Result<std::fs::File> {
+/// Verrous détenus (libérés à la fermeture des fichiers, donc à la fin du
+/// processus quoi qu'il arrive).
+struct Lock {
+    _files: Vec<std::fs::File>,
+}
+
+fn flock(path: &Path) -> Result<std::fs::File> {
     use std::os::fd::AsRawFd;
     let file = std::fs::OpenOptions::new()
         .create(true)
         .truncate(false)
         .write(true)
-        .open(lock_path())?;
+        .open(path)?;
     // SAFETY: le descripteur est valide tant que `file` existe.
     if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
         let err = std::io::Error::last_os_error();
@@ -442,25 +456,95 @@ fn acquire_lock() -> Result<std::fs::File> {
     Ok(file)
 }
 
-fn auth_cache_path() -> PathBuf {
-    runtime_dir().join("msi-lightning-lcd.auth")
+/// Prend le verrou exclusif, sous le nom actuel puis sous l'ancien.
+fn acquire_lock_in(dir: &Path) -> Result<Lock> {
+    let current = flock(&dir.join(LOCK_NAME))?;
+    let legacy = flock(&dir.join(LEGACY_LOCK_NAME))?;
+    Ok(Lock {
+        _files: vec![current, legacy],
+    })
+}
+
+fn acquire_lock() -> Result<Lock> {
+    acquire_lock_in(&runtime_dir())
+}
+
+/// Clé `bus:adresse` en cache ; l'ancien fichier n'est lu qu'à défaut du nouveau.
+fn auth_cache_read_in(dir: &Path) -> Option<String> {
+    [AUTH_NAME, LEGACY_AUTH_NAME].iter().find_map(|name| {
+        std::fs::read_to_string(dir.join(name))
+            .ok()
+            .map(|s| s.trim().to_owned())
+    })
+}
+
+/// Écrit le cache sous le nouveau nom et retire l'ancien.
+fn auth_cache_write_in(dir: &Path, key: &str) {
+    if let Err(e) = std::fs::write(dir.join(AUTH_NAME), key) {
+        debug!("cache d'authentification non écrit : {e}");
+        return;
+    }
+    let _ = std::fs::remove_file(dir.join(LEGACY_AUTH_NAME));
 }
 
 fn auth_cache_read() -> Option<String> {
-    std::fs::read_to_string(auth_cache_path())
-        .ok()
-        .map(|s| s.trim().to_owned())
+    auth_cache_read_in(&runtime_dir())
 }
 
 fn auth_cache_write(key: &str) {
-    if let Err(e) = std::fs::write(auth_cache_path(), key) {
-        debug!("cache d'authentification non écrit : {e}");
-    }
+    auth_cache_write_in(&runtime_dir(), key);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn tmp(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("lightning-lcd-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn lock_excludes_new_and_old_versions() {
+        let dir = tmp("lock");
+        let held = acquire_lock_in(&dir).unwrap();
+        assert!(dir.join("lightning-lcd.lock").exists());
+        assert!(matches!(acquire_lock_in(&dir), Err(Error::Busy)));
+        // Une ancienne version tient seulement l'ancien verrou : refus aussi.
+        drop(held);
+        let old = flock(&dir.join("msi-lightning-lcd.lock")).unwrap();
+        assert!(matches!(acquire_lock_in(&dir), Err(Error::Busy)));
+        drop(old);
+        // Et une ancienne version lancée après une nouvelle est exclue.
+        let _new = acquire_lock_in(&dir).unwrap();
+        assert!(matches!(
+            flock(&dir.join("msi-lightning-lcd.lock")),
+            Err(Error::Busy)
+        ));
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn auth_cache_is_migrated() {
+        let dir = tmp("auth");
+        assert_eq!(auth_cache_read_in(&dir), None);
+        // Cache d'une ancienne version : relu, puis remplacé par le nouveau nom.
+        std::fs::write(dir.join("msi-lightning-lcd.auth"), "3:7\n").unwrap();
+        assert_eq!(auth_cache_read_in(&dir).as_deref(), Some("3:7"));
+        auth_cache_write_in(&dir, "3:8");
+        assert!(!dir.join("msi-lightning-lcd.auth").exists());
+        assert_eq!(
+            std::fs::read_to_string(dir.join("lightning-lcd.auth")).unwrap(),
+            "3:8"
+        );
+        assert_eq!(auth_cache_read_in(&dir).as_deref(), Some("3:8"));
+        // Le nouveau nom l'emporte sur un ancien fichier réapparu.
+        std::fs::write(dir.join("msi-lightning-lcd.auth"), "1:1").unwrap();
+        assert_eq!(auth_cache_read_in(&dir).as_deref(), Some("3:8"));
+        let _ = std::fs::remove_dir_all(dir);
+    }
 
     #[test]
     fn jpeg_is_baseline_420_at_requested_size() {

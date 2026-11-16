@@ -15,7 +15,8 @@ applicatif (trames « BY ») piloté par HID. `lcd.py` (pyusb + Pillow, `/usr/bi
 ffmpeg ... -c:v mjpeg -huffman default -f mjpeg - | ./lcd.py stream [--fps N]
 ./lcd.py status | extend | brightness N          # canal HID
 ```
-Accès non-root : `70-msi-lightning-lcd.rules` (dans `/etc/udev/rules.d/`, USB + hidraw de 0db0:7881).
+Accès non-root : `70-lightning-lcd.rules` dans `/etc/udev/rules.d/` (USB + hidraw de 0db0:7881 ;
+nommée `70-msi-lightning-lcd.rules` jusqu'à la 0.1).
 
 ### Séquence qui marche (figée dans `Lcd.open()`)
 1. **HID** : `POST conn` (état) puis, si `extendedDisplay:0`, `POST extendedDisplay {"enable":true}`.
@@ -128,7 +129,9 @@ Windows étendu.
   tentative, ce qui fermait le canal HID avant la bascule (boucle de reconnexion). Le mode
   1280×800@60 étant fixe, `lightning-lcd` n'émet plus aucune requête vendor.
 - **Exclusivité** : un seul processus doit piloter l'écran (deux flux bulk entrelacés se
-  corrompent). `lightning-lcd` prend un verrou `flock` sur `$XDG_RUNTIME_DIR/msi-lightning-lcd.lock`.
+  corrompent). `lightning-lcd` prend un verrou `flock` sur
+  `$XDG_RUNTIME_DIR/lightning-lcd.lock`, et aussi sur l'ancien nom `msi-lightning-lcd.lock` pour
+  exclure une version 0.1 encore lancée pendant une mise à jour.
 
 ### À ne pas faire
 - `POST transport` / `transported` (upload d'un média en flash) : écriture persistante, jamais envoyée.

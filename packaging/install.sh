@@ -30,7 +30,9 @@ done
 DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 UNIT=lightning-dashboard.service
-RULE=/etc/udev/rules.d/70-msi-lightning-lcd.rules
+RULE=/etc/udev/rules.d/70-lightning-lcd.rules
+# Nom de la règle jusqu'à la version 0.1, remplacée à l'installation.
+LEGACY_RULE=/etc/udev/rules.d/70-msi-lightning-lcd.rules
 APP=cloud.wizops.Lightning
 
 if [[ $UNINSTALL == 1 ]]; then
@@ -42,8 +44,8 @@ if [[ $UNINSTALL == 1 ]]; then
         "$DATA/icons/hicolor/scalable/apps/$APP.svg" \
         "$DATA/icons/hicolor/symbolic/apps/$APP-symbolic.svg"
     if [[ $SERVICE == 1 ]]; then systemctl --user daemon-reload; fi
-    if [[ $UDEV == 1 && -f $RULE ]]; then
-        sudo rm -f "$RULE" && sudo udevadm control --reload-rules
+    if [[ $UDEV == 1 && ( -f $RULE || -f $LEGACY_RULE ) ]]; then
+        sudo rm -f "$RULE" "$LEGACY_RULE" && sudo udevadm control --reload-rules
     fi
     echo "lightning-lcd désinstallé (la configuration ~/.config/lightning est conservée)."
     exit 0
@@ -71,7 +73,8 @@ command -v update-desktop-database >/dev/null \
 
 if [[ $UDEV == 1 ]]; then
     echo "Règle udev (accès à l'écran sans root) : sudo est demandé."
-    sudo install -m644 "$HERE/packaging/70-msi-lightning-lcd.rules" "$RULE"
+    sudo install -m644 "$HERE/packaging/70-lightning-lcd.rules" "$RULE"
+    sudo rm -f "$LEGACY_RULE"
     sudo udevadm control --reload-rules
     sudo udevadm trigger --attr-match=idVendor=0db0 --attr-match=idProduct=7881
 fi

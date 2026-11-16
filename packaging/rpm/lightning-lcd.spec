@@ -75,8 +75,8 @@ content, slideshow folders, dashboard panels and brightness.
 %install
 install -Dpm0755 target/rpm/lightning %{buildroot}%{_bindir}/lightning
 install -Dpm0755 target/rpm/lightning-settings %{buildroot}%{_bindir}/lightning-settings
-install -Dpm0644 packaging/70-msi-lightning-lcd.rules \
-    %{buildroot}%{_udevrulesdir}/70-msi-lightning-lcd.rules
+install -Dpm0644 packaging/70-lightning-lcd.rules \
+    %{buildroot}%{_udevrulesdir}/70-lightning-lcd.rules
 # L'unité livrée vise ~/.local/bin ; le paquet installe dans /usr/bin.
 install -d %{buildroot}%{_userunitdir}
 sed 's|^ExecStart=.*|ExecStart=%{_bindir}/lightning daemon|; /^#   /d' \
@@ -110,7 +110,7 @@ appstreamcli validate --no-net %{buildroot}%{_metainfodir}/cloud.wizops.Lightnin
 %license crates/lightning-dashboard/assets/OFL.txt
 %doc README.md docs/PROTOCOL.md packaging/config.example.toml
 %{_bindir}/lightning
-%{_udevrulesdir}/70-msi-lightning-lcd.rules
+%{_udevrulesdir}/70-lightning-lcd.rules
 %{_userunitdir}/lightning-dashboard.service
 
 %files settings

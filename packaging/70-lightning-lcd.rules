@@ -1,5 +1,6 @@
 # MSI RTX 5090 Lightning Z — écran LCD "V530-9.6 Lightning" (ArtInChip USB Display) :
 # accès pour l'utilisateur connecté. Doit être trié avant 73-seat-late.rules.
+# Remplace 70-msi-lightning-lcd.rules (versions 0.1), à supprimer.
 #
 # 0db0:7881 est l'écran testé. Les identifiants 0db0:7880 à 0db0:7919, déclarés par le
 # pilote Windows pour d'autres cartes, sont aussi ouverts à l'utilisateur ; lightning ne

@@ -23,7 +23,7 @@ DIR="$STAGE/$NAME"
 install -Dm755 "$BIN/lightning" "$DIR/bin/lightning"
 install -Dm755 "$BIN/lightning-settings" "$DIR/bin/lightning-settings"
 install -Dm755 "$ROOT/packaging/install.sh" "$DIR/install.sh"
-for f in 70-msi-lightning-lcd.rules lightning-dashboard.service cloud.wizops.Lightning.desktop \
+for f in 70-lightning-lcd.rules lightning-dashboard.service cloud.wizops.Lightning.desktop \
     config.example.toml icons/cloud.wizops.Lightning.svg icons/cloud.wizops.Lightning-symbolic.svg; do
     install -Dm644 "$ROOT/packaging/$f" "$DIR/packaging/$f"
 done

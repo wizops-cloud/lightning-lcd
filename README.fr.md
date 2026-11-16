@@ -107,7 +107,8 @@ install -Dm755 target/release/lightning ~/.local/bin/lightning
 install -Dm755 target/release/lightning-settings ~/.local/bin/lightning-settings
 
 # Accès à l'écran sans root (USB + hidraw des écrans 0db0:7880 à 0db0:7919)
-sudo install -m644 packaging/70-msi-lightning-lcd.rules /etc/udev/rules.d/
+sudo install -m644 packaging/70-lightning-lcd.rules /etc/udev/rules.d/
+sudo rm -f /etc/udev/rules.d/70-msi-lightning-lcd.rules   # ancien nom (0.1), s'il existe
 sudo udevadm control --reload-rules && sudo udevadm trigger --attr-match=idVendor=0db0 --attr-match=idProduct=7881
 
 # Service utilisateur (démon pilotable)
@@ -124,6 +125,18 @@ update-desktop-database ~/.local/share/applications
 ```
 
 Sans l'application de réglage : `cargo build --release -p lightning` suffit, et GTK n'est pas requis.
+
+### Mise à jour depuis la 0.1
+
+Les fichiers d'exécution ne portent plus la marque du constructeur :
+
+| 0.1 | Maintenant | Migration |
+|---|---|---|
+| `/etc/udev/rules.d/70-msi-lightning-lcd.rules` | `70-lightning-lcd.rules` | installer la nouvelle règle et supprimer l'ancienne (commandes ci-dessus ; `install.sh` et le RPM le font) |
+| `$XDG_RUNTIME_DIR/msi-lightning-lcd.lock` | `lightning-lcd.lock` | automatique : les deux verrous sont pris, une 0.1 encore lancée reste exclue |
+| `$XDG_RUNTIME_DIR/msi-lightning-lcd.auth` | `lightning-lcd.auth` | automatique : l'ancien cache est relu une fois puis remplacé |
+
+Après la mise à jour, redémarrer le service (`systemctl --user restart lightning-dashboard`).
 
 Photos HEIC des téléphones : `cargo build --release -p lightning --features heic` (libheif ≥ 1.17
 et un décodeur HEVC pour libheif). Sans cette option, le diaporama ignore les fichiers `.heic` /
@@ -318,7 +331,7 @@ Avec `color` ou `image`, une sortie d'aperçu maintient le programme ouvert jusq
 - `--on-exit keep` (défaut) laisse la dernière image ; `blank` affiche un écran noir
   « tableau de bord arrêté » ; `restore` rend la main au firmware (animation MSI d'origine).
   `lightning restore` fait la même chose à la demande.
-- Un seul processus pilote l'écran à la fois (verrou `$XDG_RUNTIME_DIR/msi-lightning-lcd.lock`) :
+- Un seul processus pilote l'écran à la fois (verrou `$XDG_RUNTIME_DIR/lightning-lcd.lock`) :
   un second lancement échoue avec un message clair au lieu de perturber le premier.
 
 ### Configuration
