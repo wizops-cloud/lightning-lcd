@@ -79,7 +79,11 @@ au matériel : elle pilote le démon par D-Bus et le service par l'API D-Bus de 
 |---|---|---|
 | ![](docs/screenshots/contenu-sombre.png) | ![](docs/screenshots/contenu-clair.png) | ![](docs/screenshots/accueil-etroit.png) |
 
-Toutes les captures : [docs/screenshots/](docs/screenshots/).
+Toutes les captures : [docs/screenshots/](docs/screenshots/). Elles se régénèrent avec
+`scripts/screenshots.sh` (avec `docs/dashboard.png`) : démon `--no-lcd --demo` et faux
+gestionnaire systemd sur un bus D-Bus privé, compositeur `mutter --headless`, photos de
+démonstration dessinées à la volée. Ni l'écran ni le service réel ne sont touchés. Il faut
+`mutter`, ImageMagick (`magick`) et `python3-gobject` en plus des dépendances de construction.
 
 ## Démon, D-Bus et `lightning ctl`
 
